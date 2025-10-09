@@ -43,10 +43,10 @@ PHRASES = [
 ]
 
 # Path to vosk model directory (set if using offline)
-VOSK_MODEL_PATH = "models/vosk-model-small-en-us-0.15"  # <-- change to your model path
+VOSK_MODEL_PATH = "vosk-model-en-us-0.22-lgraph"  # adjust as needed
 
 # Mode: "google", "vosk", or "auto"
-MODE = "auto"
+MODE = "vosk"  # "google" = online, "vosk" = offline, "auto" = try google then vosk
 
 # Matching sensitivity [0.0 - 1.0]. Higher => stricter match
 MATCH_THRESHOLD = 0.70
