@@ -1,11 +1,4 @@
-speech_recognition
+SpeechRecognition
 vosk
 sounddevice
 numpy
-python-Levenshtein
-pydub
-pyaudio
-fuzzywuzzy
-srt
-requests
-PyYAML
