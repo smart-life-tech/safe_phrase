@@ -1,0 +1,96 @@
+esphome:
+  name: safephrase-wake
+  comment: "ESP32 INMP441 wake-word detector for SafePhrase system"
+  platformio_options:
+    board_build.flash_mode: dio
+    extra_scripts:
+      - pre:../disable_app_trace.py
+    build_src_filter: +<*> -<**/app_trace/*>
+    build_path: ./.build
+    build_flags:
+      - "-D CONFIG_APPTRACE_ENABLE=0"
+      - "-D CONFIG_APPTRACE_DEST_NONE=1"
+      - "-D CONFIG_APPTRACE_ONPANIC_ENABLE=0"
+      - "-D CONFIG_APPTRACE_POSTMORTEM_ENABLE=0"
+      - "-D CONFIG_APPTRACE_GCOV_ENABLE=0"
+      - "-D CONFIG_APPTRACE_SV_ENABLE=0"
+      - "-D CONFIG_APPTRACE_USE_FLASH_MEM=0"
+      - "-D CONFIG_LOG_DEFAULT_LEVEL=3"
+      - "-DCONFIG_FREERTOS_USE_TRACE_FACILITY=0"
+      - "-DCONFIG_FREERTOS_ENABLE_TASK_SNAPSHOT=0"
+      - "-DCOMPONENTS_EXCLUDE=app_trace"
+    build_unflags:
+      - "-Werror=all"
+      - "-D CONFIG_APPTRACE_ENABLE=1"
+      - "-D CONFIG_APPTRACE_DEST_TRAX=1"
+      - "-D CONFIG_APPTRACE_DEST_UART=1"
+
+  on_boot:
+    priority: -10
+    then:
+      - logger.log: "Wake word detection starting..."
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESP_ADF_SUPPORT: y        # enable esp_adf
+      CONFIG_ESP_SR_WN9_ENABLE: y      # enable WakeNet9
+      CONFIG_ESP_SR_MN1_ENABLE: n
+      CONFIG_ESP_SR_MN2_ENABLE: n
+
+logger:
+  level: INFO
+api:
+ota:
+  platform: esphome
+wifi:
+  ssid: "YOUR_WIFI_SSID"
+  password: "YOUR_WIFI_PASSWORD"
+  power_save_mode: none
+
+# ----------------------------
+# INMP441 Microphone (I²S)
+# ----------------------------
+i2s_audio:
+  - id: mic_bus
+    i2s_lrclk_pin: GPIO25
+    i2s_bclk_pin: GPIO26
+
+microphone:
+  - platform: i2s_audio
+    id: inmp441_mic
+    adc_type: external
+    i2s_audio_id: mic_bus
+    i2s_din_pin: GPIO22
+    channel: left
+
+# ----------------------------
+# Voice Assistant / Wake Word
+# ----------------------------
+voice_assistant:
+  microphone: inmp441_mic
+  noise_suppression_level: 2
+  use_wake_word: true
+  on_wake_word_detected:
+    - logger.log: "Wake word detected!"
+    - output.turn_on: pi_trigger
+    - delay: 0.5s
+    - output.turn_off: pi_trigger
+
+# ----------------------------
+# GPIO output to Raspberry Pi
+# ----------------------------
+output:
+  - platform: gpio
+    id: pi_trigger
+    pin: GPIO4
+
+# ----------------------------
+# Optional LED indicator
+# ----------------------------
+light:
+  - platform: binary
+    name: "Wake LED"
+    output: pi_trigger
