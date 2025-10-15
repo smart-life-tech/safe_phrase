@@ -3,27 +3,26 @@ esphome:
   comment: "ESP32 INMP441 wake-word detector for SafePhrase system"
   platformio_options:
     board_build.flash_mode: dio
-    extra_scripts:
-      - pre:../disable_app_trace.py
-    build_src_filter: +<*> -<**/app_trace/*>
-    build_path: ./.build
-    build_flags:
-      - "-D CONFIG_APPTRACE_ENABLE=0"
-      - "-D CONFIG_APPTRACE_DEST_NONE=1"
-      - "-D CONFIG_APPTRACE_ONPANIC_ENABLE=0"
-      - "-D CONFIG_APPTRACE_POSTMORTEM_ENABLE=0"
-      - "-D CONFIG_APPTRACE_GCOV_ENABLE=0"
-      - "-D CONFIG_APPTRACE_SV_ENABLE=0"
-      - "-D CONFIG_APPTRACE_USE_FLASH_MEM=0"
-      - "-D CONFIG_LOG_DEFAULT_LEVEL=3"
-      - "-DCONFIG_FREERTOS_USE_TRACE_FACILITY=0"
-      - "-DCONFIG_FREERTOS_ENABLE_TASK_SNAPSHOT=0"
-      - "-DCOMPONENTS_EXCLUDE=app_trace"
-    build_unflags:
-      - "-Werror=all"
-      - "-D CONFIG_APPTRACE_ENABLE=1"
-      - "-D CONFIG_APPTRACE_DEST_TRAX=1"
-      - "-D CONFIG_APPTRACE_DEST_UART=1"
+    # build_flags:
+    #   # Disable app_trace completely
+    #   - -DCONFIG_APPTRACE_ENABLE=0
+    #   - -DCONFIG_APPTRACE_DEST_NONE=1
+    #   - -DCONFIG_APPTRACE_ONPANIC_ENABLE=0
+    #   - -DCONFIG_APPTRACE_POSTMORTEM_ENABLE=0
+    #   - -DCONFIG_APPTRACE_GCOV_ENABLE=0
+    #   - -DCONFIG_APPTRACE_SV_ENABLE=0
+    #   - -DCONFIG_APPTRACE_USE_FLASH_MEM=0
+    #   - -DCONFIG_APPTRACE_MEMBUFS_APPTRACE_PROTO_ENABLE=0
+
+    #   # Disable FreeRTOS trace (optional)
+    #   - -DCONFIG_FREERTOS_USE_TRACE_FACILITY=0
+    #   - -DCONFIG_FREERTOS_ENABLE_TASK_SNAPSHOT=0
+
+    # build_unflags:
+    #   - -Werror=all
+    #   - -DCONFIG_APPTRACE_ENABLE=1
+    #   - -DCONFIG_APPTRACE_DEST_TRAX=1
+    #   - -DCONFIG_APPTRACE_DEST_UART=1
 
   on_boot:
     priority: -10
@@ -42,9 +41,12 @@ esp32:
 
 logger:
   level: INFO
+
 api:
+
 ota:
   platform: esphome
+
 wifi:
   ssid: "YOUR_WIFI_SSID"
   password: "YOUR_WIFI_PASSWORD"
