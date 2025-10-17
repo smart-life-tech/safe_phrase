@@ -47,10 +47,12 @@ api:
 ota:
   platform: esphome
 
+  
 wifi:
-  ssid: "YOUR_WIFI_SSID"
-  password: "YOUR_WIFI_PASSWORD"
   power_save_mode: none
+  ap:
+    ssid: "safephrase-wake"
+    password: "SafePhrase1234"
 
 # ----------------------------
 # INMP441 Microphone (I²S)
