@@ -4,11 +4,6 @@ esphome:
   platformio_options:
     board_build.flash_mode: dio
     build_flags:
-      # Enable detailed ESP-IDF and speech recognition logs
-      - -DLOG_LOCAL_LEVEL=5                  # Maximum ESP-IDF log level (5 = VERBOSE)
-      - -DCONFIG_LOG_DEFAULT_LEVEL_VERBOSE
-      - -DCONFIG_ESP_SR_LOG_LEVEL_VERBOSE
-      - -DCONFIG_SR_LOG_LEVEL_VERBOSE
       - -DCONFIG_SPIRAM_CACHE_WORKAROUND=1   # Stability fix for audio
       
 
@@ -31,10 +26,10 @@ esp32:
       CONFIG_ESP_SR_WN9_ENABLE: y      # enable WakeNet9
       CONFIG_ESP_SR_MN1_ENABLE: n
       CONFIG_ESP_SR_MN2_ENABLE: n
-      CONFIG_LOG_DEFAULT_LEVEL_VERBOSE: y
-      CONFIG_ESP_CONSOLE_UART_DEFAULT: y
-      CONFIG_ESP_CONSOLE_UART_TX_GPIO: "1"
-      CONFIG_ESP_CONSOLE_UART_RX_GPIO: "3"
+      # CONFIG_LOG_DEFAULT_LEVEL_VERBOSE: y
+      # CONFIG_ESP_CONSOLE_UART_DEFAULT: y
+      # CONFIG_ESP_CONSOLE_UART_TX_GPIO: "1"
+      # CONFIG_ESP_CONSOLE_UART_RX_GPIO: "3"
 
 logger:
   level: VERY_VERBOSE
