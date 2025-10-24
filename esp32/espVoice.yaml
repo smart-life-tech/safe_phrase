@@ -46,6 +46,13 @@ logger:
 
 api:
 
+sensor:
+  - platform: microphone
+    microphone_id: inmp441_mic
+    type: amplitude
+    name: "Mic Amplitude"
+    update_interval: 1s
+
 ota:
   platform: esphome
 
@@ -71,7 +78,9 @@ microphone:
     adc_type: external
     i2s_audio_id: mic_bus
     i2s_din_pin: GPIO22
-    channel: left
+    channel: right
+    sample_rate: 16000
+    bits_per_sample: 32
 
 # ----------------------------
 # Voice Assistant / Wake Word
