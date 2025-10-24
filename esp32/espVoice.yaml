@@ -10,12 +10,21 @@ esphome:
   on_boot:
     priority: -10
     then:
+      - delay: 5s
       - logger.log: "============================"
       - logger.log: "SafePhrase Wake System Boot"
       - logger.log: "============================"
       - delay: 10s
       - logger.log: "Wake word detection starting..."
       - logger.log: "Mic initialization complete. Waiting for voice activity..."
+      - delay: 2s
+      - lambda: |-
+          auto mic = id(inmp441_mic);
+          if (mic) {
+            ESP_LOGD("test", "Mic found, sample rate: %u", mic->get_sample_rate());
+          } else {
+            ESP_LOGE("test", "Mic not found!");
+          }
 
 esp32:
   board: esp32dev
@@ -33,7 +42,7 @@ esp32:
 
 logger:
   level: VERY_VERBOSE
-  hardware_uart: UART0   # Ensures logs show on serial console
+  #hardware_uart: UART0   # Ensures logs show on serial console
 
 api:
 
