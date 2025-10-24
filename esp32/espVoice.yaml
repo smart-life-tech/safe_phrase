@@ -49,6 +49,8 @@ ota:
 
   
 wifi:
+  ssid: "TECNO SPARK 5 Air"
+  password: "1234567890"
   power_save_mode: none
   ap:
     ssid: "safephrase-wake"
