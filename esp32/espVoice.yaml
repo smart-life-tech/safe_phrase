@@ -3,64 +3,38 @@ esphome:
   comment: "ESP32 INMP441 wake-word detector for SafePhrase system"
   platformio_options:
     board_build.flash_mode: dio
-    build_flags:
-      - -DCONFIG_SPIRAM_CACHE_WORKAROUND=1   # Stability fix for audio
-      
 
   on_boot:
     priority: -10
     then:
       - delay: 5s
-      - logger.log: "============================"
-      - logger.log: "SafePhrase Wake System Boot"
-      - logger.log: "============================"
-      - delay: 10s
-      - logger.log: "Wake word detection starting..."
-      - logger.log: "Mic initialization complete. Waiting for voice activity..."
-      - delay: 2s
-      - lambda: |-
-          auto mic = id(inmp441_mic);
-          if (mic) {
-            ESP_LOGD("test", "Mic found, sample rate: %u", mic);
-          } else {
-            ESP_LOGE("test", "Mic not found!");
-          }
+      - logger.log: "🎤 Starting offline wake word detection..."
 
 esp32:
   board: esp32dev
   framework:
     type: esp-idf
     sdkconfig_options:
-      CONFIG_ESP_ADF_SUPPORT: y        # enable esp_adf
-      CONFIG_ESP_SR_WN9_ENABLE: y      # enable WakeNet9
+      CONFIG_ESP_ADF_SUPPORT: y
+      CONFIG_ESP_SR_WN9_ENABLE: y     # Enable WakeNet9 (offline wake-word)
       CONFIG_ESP_SR_MN1_ENABLE: n
       CONFIG_ESP_SR_MN2_ENABLE: n
-      # CONFIG_LOG_DEFAULT_LEVEL_VERBOSE: y
-      # CONFIG_ESP_CONSOLE_UART_DEFAULT: y
-      # CONFIG_ESP_CONSOLE_UART_TX_GPIO: "1"
-      # CONFIG_ESP_CONSOLE_UART_RX_GPIO: "3"
+      CONFIG_ESP_SR_MN3_ENABLE: n
 
 logger:
   level: VERY_VERBOSE
-  #hardware_uart: UART0   # Ensures logs show on serial console
-
-api:
-
-
-ota:
-  platform: esphome
 
 wifi:
-  ssid: "TECNO SPARK 5 Air"
-  password: "1234567890"
+  ssid: "YOUR_WIFI"
+  password: "YOUR_PASSWORD"
   power_save_mode: none
   ap:
-    ssid: "safephrase-wake"
-    password: "SafePhrase1234"
+    ssid: "wakeword-esp32"
+    password: "WakeESP32"
 
-# ----------------------------
-# INMP441 Microphone (I²S)
-# ----------------------------
+# ---------------------------
+# Microphone (I2S INMP441)
+# ---------------------------
 i2s_audio:
   - id: mic_bus
     i2s_lrclk_pin: GPIO25
@@ -68,59 +42,38 @@ i2s_audio:
 
 microphone:
   - platform: i2s_audio
-    id: inmp441_mic
+    id: mic
     adc_type: external
     i2s_audio_id: mic_bus
     i2s_din_pin: GPIO22
     channel: right
-    sample_rate: 16000
     bits_per_sample: 32bit
+    sample_rate: 16000
 
-interval:
-  - interval: 2s
-    then:
-      - lambda: |-
-          auto mic = id(inmp441_mic);
-          if (mic) {
-            ESP_LOGD("mic_test", "Mic object exists. Sample rate set internally.");
-          } else {
-            ESP_LOGE("mic_test", "Mic object not found!");
-          }
-# ----------------------------
-# Voice Assistant / Wake Word
-# ----------------------------
-voice_assistant:
-  microphone: inmp441_mic
-  noise_suppression_level: 2
-  use_wake_word: true     # Uses HA pipeline wake word
-  auto_gain: 10dBFS
-  volume_multiplier: 1.0
+# ---------------------------
+# Offline Wake Word Detection
+# ---------------------------
+# NOTE: WakeNet9 default wake word = “Hi ESP”
+# (You can switch model later for “Alexa”, “Hi Nabu”, etc.)
 
-  on_start:
-    - logger.log: "🎙️ Voice Assistant started"
-  on_client_connected:
-    - logger.log: "✅ Connected to Home Assistant for voice streaming"
-  on_client_disconnected:
-    - logger.log: "⚠️ Voice Assistant disconnected"
+speech_recognition:
+  model: wn9        # Use WakeNet9 model
+  microphone: mic
   on_wake_word_detected:
-    - logger.log: "Wake word detected by Home Assistant pipeline!"
-  on_error:
-    - logger.log:
-        format: "❌ Voice Assistant Error: Code %d, Message: %s"
-        args: [code, message]
+    - logger.log: "✅ Wake word detected!"
+    - output.turn_on: led_out
+    - delay: 1s
+    - output.turn_off: led_out
 
-# ----------------------------
-# GPIO output to Raspberry Pi
-# ----------------------------
+# ---------------------------
+# LED or GPIO Trigger Output
+# ---------------------------
 output:
   - platform: gpio
-    id: pi_trigger
+    id: led_out
     pin: GPIO4
 
-# ----------------------------
-# Optional LED indicator
-# ----------------------------
 light:
   - platform: binary
     name: "Wake LED"
-    output: pi_trigger
+    output: led_out
