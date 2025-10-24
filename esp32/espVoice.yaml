@@ -40,7 +40,7 @@ esp32:
       CONFIG_ESP_SR_MN2_ENABLE: n
 
 logger:
-  level: INFO
+  level: VERY_VERBOSE
 
 api:
 
