@@ -74,7 +74,7 @@ microphone:
     i2s_din_pin: GPIO22
     channel: right
     sample_rate: 16000
-    bits_per_sample: 32
+    bits_per_sample: 32bit
 
 interval:
   - interval: 2s
