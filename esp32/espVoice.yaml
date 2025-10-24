@@ -92,17 +92,22 @@ interval:
 voice_assistant:
   microphone: inmp441_mic
   noise_suppression_level: 2
-  debug: true
-  use_wake_word: true
+  use_wake_word: true     # Uses HA pipeline wake word
+  auto_gain: 10dBFS
+  volume_multiplier: 1.0
+
+  on_start:
+    - logger.log: "🎙️ Voice Assistant started"
+  on_client_connected:
+    - logger.log: "✅ Connected to Home Assistant for voice streaming"
+  on_client_disconnected:
+    - logger.log: "⚠️ Voice Assistant disconnected"
   on_wake_word_detected:
-    - logger.log: "Wake word detected!"
-    - output.turn_on: pi_trigger
-    - delay: 0.5s
-    - output.turn_off: pi_trigger
-  on_listening:
-    - logger.log: "Listening for wake word..."
+    - logger.log: "Wake word detected by Home Assistant pipeline!"
   on_error:
-    - logger.log: "⚠️ Voice assistant encountered an error."
+    - logger.log:
+        format: "❌ Voice Assistant Error: Code %d, Message: %s"
+        args: [code, message]
 
 # ----------------------------
 # GPIO output to Raspberry Pi
