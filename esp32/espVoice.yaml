@@ -21,7 +21,7 @@ esphome:
       - lambda: |-
           auto mic = id(inmp441_mic);
           if (mic) {
-            ESP_LOGD("test", "Mic found, sample rate: %u", mic->get_sample_rate());
+            ESP_LOGD("test", "Mic found, sample rate: %u", mic);
           } else {
             ESP_LOGE("test", "Mic not found!");
           }
