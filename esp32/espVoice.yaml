@@ -46,12 +46,6 @@ logger:
 
 api:
 
-sensor:
-  - platform: microphone
-    microphone_id: inmp441_mic
-    type: amplitude
-    name: "Mic Amplitude"
-    update_interval: 1s
 
 ota:
   platform: esphome
