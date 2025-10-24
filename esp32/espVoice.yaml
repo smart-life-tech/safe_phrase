@@ -82,12 +82,23 @@ microphone:
     sample_rate: 16000
     bits_per_sample: 32
 
+interval:
+  - interval: 2s
+    then:
+      - lambda: |-
+          auto mic = id(inmp441_mic);
+          if (mic) {
+            ESP_LOGD("mic_test", "Mic object exists. Sample rate set internally.");
+          } else {
+            ESP_LOGE("mic_test", "Mic object not found!");
+          }
 # ----------------------------
 # Voice Assistant / Wake Word
 # ----------------------------
 voice_assistant:
   microphone: inmp441_mic
   noise_suppression_level: 2
+  debug: true
   use_wake_word: true
   on_wake_word_detected:
     - logger.log: "Wake word detected!"
