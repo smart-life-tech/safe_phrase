@@ -3,31 +3,25 @@ esphome:
   comment: "ESP32 INMP441 wake-word detector for SafePhrase system"
   platformio_options:
     board_build.flash_mode: dio
-    # build_flags:
-    #   # Disable app_trace completely
-    #   - -DCONFIG_APPTRACE_ENABLE=0
-    #   - -DCONFIG_APPTRACE_DEST_NONE=1
-    #   - -DCONFIG_APPTRACE_ONPANIC_ENABLE=0
-    #   - -DCONFIG_APPTRACE_POSTMORTEM_ENABLE=0
-    #   - -DCONFIG_APPTRACE_GCOV_ENABLE=0
-    #   - -DCONFIG_APPTRACE_SV_ENABLE=0
-    #   - -DCONFIG_APPTRACE_USE_FLASH_MEM=0
-    #   - -DCONFIG_APPTRACE_MEMBUFS_APPTRACE_PROTO_ENABLE=0
-
-    #   # Disable FreeRTOS trace (optional)
-    #   - -DCONFIG_FREERTOS_USE_TRACE_FACILITY=0
-    #   - -DCONFIG_FREERTOS_ENABLE_TASK_SNAPSHOT=0
-
-    # build_unflags:
-    #   - -Werror=all
-    #   - -DCONFIG_APPTRACE_ENABLE=1
-    #   - -DCONFIG_APPTRACE_DEST_TRAX=1
-    #   - -DCONFIG_APPTRACE_DEST_UART=1
+    build_flags:
+      # Enable detailed ESP-IDF and speech recognition logs
+      - -DLOG_LOCAL_LEVEL=5                  # Maximum ESP-IDF log level (5 = VERBOSE)
+      - -DCONFIG_LOG_DEFAULT_LEVEL_VERBOSE
+      - -DCONFIG_ESP_SR_LOG_LEVEL_VERBOSE
+      - -DCONFIG_SR_LOG_LEVEL_VERBOSE
+      - -DCONFIG_SPIRAM_CACHE_WORKAROUND=1   # Stability fix for audio
+      - -DCONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM=16
+      - -DCONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM=32
 
   on_boot:
     priority: -10
     then:
+      - logger.log: "============================"
+      - logger.log: "SafePhrase Wake System Boot"
+      - logger.log: "============================"
+      - delay: 10s
       - logger.log: "Wake word detection starting..."
+      - logger.log: "Mic initialization complete. Waiting for voice activity..."
 
 esp32:
   board: esp32dev
@@ -38,16 +32,20 @@ esp32:
       CONFIG_ESP_SR_WN9_ENABLE: y      # enable WakeNet9
       CONFIG_ESP_SR_MN1_ENABLE: n
       CONFIG_ESP_SR_MN2_ENABLE: n
+      CONFIG_LOG_DEFAULT_LEVEL_VERBOSE: y
+      CONFIG_ESP_CONSOLE_UART_DEFAULT: y
+      CONFIG_ESP_CONSOLE_UART_TX_GPIO: 1
+      CONFIG_ESP_CONSOLE_UART_RX_GPIO: 3
 
 logger:
   level: VERY_VERBOSE
+  hardware_uart: UART0   # Ensures logs show on serial console
 
 api:
 
 ota:
   platform: esphome
 
-  
 wifi:
   ssid: "TECNO SPARK 5 Air"
   password: "1234567890"
@@ -84,6 +82,10 @@ voice_assistant:
     - output.turn_on: pi_trigger
     - delay: 0.5s
     - output.turn_off: pi_trigger
+  on_listening:
+    - logger.log: "Listening for wake word..."
+  on_error:
+    - logger.log: "⚠️ Voice assistant encountered an error."
 
 # ----------------------------
 # GPIO output to Raspberry Pi
