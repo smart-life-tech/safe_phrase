@@ -8,6 +8,9 @@
 #include "esp_wn_iface.h"
 #include "esp_wn_models.h"
 
+#define WAKENET5X3_HILEXIN esp_wn_handle
+#define WAKENET5X3_HILEXIN_COEFF get_coeff_hilexin_wn5X3
+
 #define TAG "WAKE"
 #define I2S_BCK_IO  (gpio_num_t)26
 #define I2S_WS_IO   (gpio_num_t)25
