@@ -1,3 +1,3 @@
 idf_component_register(SRCS "main.cpp"
     INCLUDE_DIRS "."
-    REQUIRES esp-sr esp-adf-libs driver)
+    REQUIRES esp_sr esp-adf-libs driver)
