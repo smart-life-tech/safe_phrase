@@ -61,7 +61,7 @@ extern "C" void app_main(void) {
         if (bytes_read > 0) {
             int result = esp_sr_wakenet_detect(wn_handle, buffer);
             if (result) {
-                ESP_LOGI(TAG, "✅ Wake word detected!");
+                ESP_LOGI(TAG, " Wake word detected!");
                 gpio_set_level(LED_PIN, 1);
                 vTaskDelay(pdMS_TO_TICKS(1000));
                 gpio_set_level(LED_PIN, 0);
