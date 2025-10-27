@@ -8,9 +8,6 @@
 #include "esp_wn_iface.h"
 #include "esp_wn_models.h"
 
-#define WAKENET5X3_HILEXIN esp_wn_handle
-#define WAKENET5X3_HILEXIN_COEFF get_coeff_hilexin_wn5X3
-
 #define TAG "WAKE"
 #define I2S_BCK_IO  (gpio_num_t)26
 #define I2S_WS_IO   (gpio_num_t)25
@@ -44,8 +41,8 @@ void app_main(void) {
     ESP_LOGI(TAG, "Initializing I2S...");
     i2s_init();
 
-    const esp_wn_iface_t *wakenet = &WAKENET5X3_HILEXIN;
-    model_iface_data_t *model_data = wakenet->create(&WAKENET5X3_HILEXIN_COEFF, DET_MODE_95);
+    const esp_wn_iface_t *wakenet = &esp_wn_handle;
+model_iface_data_t *model_data = wakenet->create(&get_coeff_hilexin_wn5X3, DET_MODE_95);
 
     int chunk_size = wakenet->get_samp_chunksize(model_data);
     int16_t *buffer = (int16_t *)malloc(chunk_size * sizeof(int16_t));
