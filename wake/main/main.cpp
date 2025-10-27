@@ -7,7 +7,11 @@
 #include "hilexin_wn5X3.h"
 #include "esp_wn_iface.h"
 #include "esp_wn_models.h"
+#include "dl_lib_coefgetter_if.h"
+
 extern const esp_wn_iface_t esp_wn_handle;
+extern const model_coeff_getter_t get_coeff_hilexin_wn5X3;
+
 #define TAG "WAKE"
 #define I2S_BCK_IO (gpio_num_t)26
 #define I2S_WS_IO (gpio_num_t)25
