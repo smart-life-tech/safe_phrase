@@ -2,7 +2,7 @@
 #include "esp_system.h"
 #include "esp_wn_iface.h"
 #include "esp_wn_models.h"
-#include "esp_sr_iface.h"
+//#include "esp_sr_iface.h"
 #include "driver/i2s_std.h"
 #include "driver/gpio.h"
 
