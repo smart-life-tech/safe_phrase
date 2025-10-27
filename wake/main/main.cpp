@@ -8,7 +8,7 @@
 
 #include "esp_wn_iface.h"
 #include "esp_wn_models.h"
-#include "esp_sr_models.h"
+//#include "esp_sr_models.h"
 
 static const char *TAG = "WakeWord";
 
