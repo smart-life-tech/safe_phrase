@@ -42,7 +42,7 @@ static void i2s_init(void)
     i2s_channel_enable(rx_handle);
 }
 
-void app_main(void)
+extern "C" void app_main(void)
 {
     ESP_LOGI(TAG, "Initializing I2S...");
     i2s_init();
