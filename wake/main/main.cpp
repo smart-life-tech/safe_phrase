@@ -1,144 +1,126 @@
+/*
+   This example code is in the Public Domain (or CC0 licensed, at your option.)
+
+   Unless required by applicable law or agreed to in writing, this
+   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+   CONDITIONS OF ANY KIND, either express or implied.
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "driver/i2s_std.h"
-#include "esp_log.h"
-// #include "hilexin_wn9.h"
 #include "esp_wn_iface.h"
 #include "esp_wn_models.h"
-#include "dl_lib_coefgetter_if.h"
+#include "esp_afe_sr_models.h"
+#include "esp_mn_iface.h"
+#include "esp_mn_models.h"
+#include "esp_board_init.h"
 #include "model_path.h"
 #include "string.h"
-// #include "hilexin.h"
 
-// extern const esp_wn_iface_t esp_wn_handle;
-// extern const model_coeff_getter_t get_coeff_hilexin_wn9;
+int detect_flag = 0;
+static esp_afe_sr_iface_t *afe_handle = NULL;
+static volatile int task_flag = 0;
 
-#define TAG "WAKE"
-#define I2S_BCK_IO (gpio_num_t)26
-#define I2S_WS_IO (gpio_num_t)25
-#define I2S_SD_IO (gpio_num_t)22
-
-static i2s_chan_handle_t rx_handle;
-
-static void i2s_init(void)
+void feed_Task(void *arg)
 {
-    i2s_chan_config_t chan_cfg = {
-        .id = I2S_NUM_0,
-        .role = I2S_ROLE_MASTER,
-        .dma_desc_num = 8,
-        .dma_frame_num = 240,
-    };
-    i2s_new_channel(&chan_cfg, NULL, &rx_handle);
-    i2s_std_config_t std_cfg = {
-        .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(16000),
-        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
-        .gpio_cfg = {
-            .bclk = I2S_BCK_IO,
-            .ws = I2S_WS_IO,
-            .din = I2S_SD_IO,
-        },
-    };
+    esp_afe_sr_data_t *afe_data = arg;
+    int audio_chunksize = afe_handle->get_feed_chunksize(afe_data);
+    int nch = afe_handle->get_feed_channel_num(afe_data);
+    int feed_channel = esp_get_feed_channel();
+    assert(nch == feed_channel);
+    int16_t *i2s_buff = malloc(audio_chunksize * sizeof(int16_t) * feed_channel);
+    assert(i2s_buff);
 
-    i2s_channel_init_std_mode(rx_handle, &std_cfg);
-    i2s_channel_enable(rx_handle);
+    while (task_flag)
+    {
+        esp_get_feed_data(true, i2s_buff, audio_chunksize * sizeof(int16_t) * feed_channel);
+
+        afe_handle->feed(afe_data, i2s_buff);
+    }
+    if (i2s_buff)
+    {
+        free(i2s_buff);
+        i2s_buff = NULL;
+    }
+    vTaskDelete(NULL);
 }
-extern "C" void app_main(void)
+
+void detect_Task(void *arg)
 {
-    ESP_LOGI(TAG, "Initializing I2S...");
-    i2s_init();
+    esp_afe_sr_data_t *afe_data = arg;
+    int afe_chunksize = afe_handle->get_fetch_chunksize(afe_data);
+    int16_t *buff = malloc(afe_chunksize * sizeof(int16_t));
+    assert(buff);
+    printf("------------detect start------------\n");
 
-    // Use embedded models
+    // modify wakenet detection threshold
+    afe_handle->set_wakenet_threshold(afe_data, 1, 0.6); // set model1's threshold to 0.6
+    afe_handle->set_wakenet_threshold(afe_data, 2, 0.6); // set model2's threshold to 0.6
+    afe_handle->reset_wakenet_threshold(afe_data, 1);    // reset model1's threshold to default
+    afe_handle->reset_wakenet_threshold(afe_data, 2);    // reset model2's threshold to default
+
+    while (task_flag)
+    {
+        afe_fetch_result_t *res = afe_handle->fetch(afe_data);
+        if (!res || res->ret_value == ESP_FAIL)
+        {
+            printf("fetch error!\n");
+            break;
+        }
+        // printf("vad state: %d\n", res->vad_state);
+
+        if (res->wakeup_state == WAKENET_DETECTED)
+        {
+            printf("wakeword detected\n");
+            printf("model index:%d, word index:%d\n", res->wakenet_model_index, res->wake_word_index);
+            printf("-----------LISTENING-----------\n");
+        }
+    }
+    if (buff)
+    {
+        free(buff);
+        buff = NULL;
+    }
+    vTaskDelete(NULL);
+}
+
+void app_main()
+{
+    ESP_ERROR_CHECK(esp_board_init(16000, 1, 16));
+    // ESP_ERROR_CHECK(esp_sdcard_init("/sdcard", 10));
+
     srmodel_list_t *models = esp_srmodel_init("model");
-    if (!models || models->num == 0)
+    if (models)
     {
-        ESP_LOGE(TAG, "No embedded models! Enable 'Hi, Lexin (WN9)' in menuconfig.");
-        vTaskDelay(pdMS_TO_TICKS(5000));
-        esp_restart();
-    }
-
-    ESP_LOGI(TAG, "Found %d embedded model(s):", models->num);
-
-    // Safely print model names
-    // Find WN9 model
-    char *model_name = NULL;
-    for (int i = 0; i < models->num; i++)
-    {
-        if (models->model_name[i] && strlen(models->model_name[i]) > 0)
+        for (int i = 0; i < models->num; i++)
         {
-            ESP_LOGI(TAG, "  [%d] '%s'", i, models->model_name[i]);
-            if (strstr(models->model_name[i], "wn9_hilexin") || strstr(models->model_name[i], "wn9_alexa"))
+            if (strstr(models->model_name[i], ESP_WN_PREFIX) != NULL)
             {
-                model_name = models->model_name[i];
-                break;
+                printf("wakenet model in flash: %s\n", models->model_name[i]);
             }
         }
     }
-    if (!model_name)
+
+    afe_config_t *afe_config = afe_config_init(esp_get_input_format(), models, AFE_TYPE_SR, AFE_MODE_LOW_COST);
+
+    // print/modify wake word model.
+    if (afe_config->wakenet_model_name)
     {
-        ESP_LOGE(TAG, "No HiLexin model found! Check menuconfig.");
-        vTaskDelay(pdMS_TO_TICKS(5000));
-        esp_restart();
+        printf("wakeword model in AFE config: %s\n", afe_config->wakenet_model_name);
+    }
+    if (afe_config->wakenet_model_name_2)
+    {
+        printf("wakeword model in AFE config: %s\n", afe_config->wakenet_model_name_2);
     }
 
-    ESP_LOGI(TAG, "Using model: '%s'", model_name);
+    afe_handle = esp_afe_handle_from_config(afe_config);
+    esp_afe_sr_data_t *afe_data = afe_handle->create_from_config(afe_config);
 
-    esp_wn_iface_t *wakenet = (esp_wn_iface_t *)esp_wn_handle_from_name(model_name);
-    if (!wakenet)
-    {
-        ESP_LOGE(TAG, "No wakenet interface for '%s'", model_name);
-        vTaskDelay(pdMS_TO_TICKS(5000));
-        esp_restart();
-    }
-    else
-    {
-        ESP_LOGI(TAG, "Wakenet interface found for '%s'", model_name);
-    }
-    ESP_LOGI(TAG, "Wakenet interface found for '%s'", model_name);
-   
-    
-    const void *model_datas = models->model_data[0];
-    model_iface_data_t *model_data = wakenet->create(model_datas, DET_MODE_95);
-    if (!model_data)
-    {
-        ESP_LOGE(TAG, "Failed to create model!");
-        vTaskDelay(pdMS_TO_TICKS(5000));
-        esp_restart();
-    }
-    else
-    {
-        ESP_LOGI(TAG, "Model created successfully for '%s'", model_name);
-    }
-    ESP_LOGI(TAG, "Model created successfully for '%s'", model_name);
+    //
+    afe_config_free(afe_config);
 
-    int chunk_size = wakenet->get_samp_chunksize(model_data);
-    int16_t *buffer = (int16_t *)malloc(chunk_size * sizeof(int16_t));
-    if (!buffer)
-    {
-        ESP_LOGE(TAG, "malloc failed!");
-        wakenet->destroy(model_data);
-        vTaskDelay(pdMS_TO_TICKS(5000));
-        esp_restart();
-    }
-    else
-    {
-        ESP_LOGI(TAG, "Buffer allocated with chunk size: %d", chunk_size);
-    }
-
-    ESP_LOGI(TAG, "Listening for 'Hi, Lexin' wake word...");
-
-    while (true)
-    {
-        size_t bytes_read = 0;
-        esp_err_t r = i2s_channel_read(rx_handle, buffer, chunk_size * 2, &bytes_read, portMAX_DELAY);
-        if (r == ESP_OK && bytes_read == chunk_size * 2)
-        {
-            wakenet_state_t state = wakenet->detect(model_data, buffer);
-            if (state == WAKENET_DETECTED)
-            {
-                ESP_LOGI(TAG, "*** WAKE WORD DETECTED! ***");
-            }
-        }
-    }
+    task_flag = 1;
+    xTaskCreatePinnedToCore(&feed_Task, "feed", 8 * 1024, (void *)afe_data, 5, NULL, 0);
+    xTaskCreatePinnedToCore(&detect_Task, "detect", 4 * 1024, (void *)afe_data, 5, NULL, 1);
 }
