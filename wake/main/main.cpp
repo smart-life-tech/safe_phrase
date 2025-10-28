@@ -4,7 +4,7 @@
 #include "freertos/task.h"
 #include "driver/i2s_std.h"
 #include "esp_log.h"
-#include "hilexin_wn9.h"
+//#include "hilexin_wn9.h"
 #include "esp_wn_iface.h"
 #include "esp_wn_models.h"
 #include "dl_lib_coefgetter_if.h"
