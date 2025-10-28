@@ -7,8 +7,6 @@
 #include "esp_log.h"
 #include "esp_afe_sr_iface.h"
 #include "esp_afe_sr_models.h"
-#include "esp_wn_iface.h"
-#include "esp_wn_models.h"
 
 #define TAG "WAKE"
 #define I2S_BCK_IO GPIO_NUM_26
@@ -21,12 +19,7 @@ static volatile int task_flag = 0;
 
 void i2s_init()
 {
-    i2s_chan_config_t chan_cfg = {
-        .id = I2S_NUM_0,
-        .role = I2S_ROLE_MASTER,
-        .dma_desc_num = 8,
-        .dma_frame_num = 240,
-    };
+    i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
     ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, NULL, &rx_handle));
 
     i2s_std_config_t std_cfg = {
@@ -36,7 +29,6 @@ void i2s_init()
             .bclk = I2S_BCK_IO,
             .ws = I2S_WS_IO,
             .din = I2S_SD_IO,
-           
         },
     };
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_handle, &std_cfg));
@@ -51,16 +43,12 @@ void feed_Task(void *arg)
     int16_t *buffer = (int16_t *)malloc(chunk * ch * sizeof(int16_t));
     assert(buffer);
 
-    while (task_flag)
-    {
+    while (task_flag) {
         size_t bytes_read = 0;
-        esp_err_t ret = i2s_channel_read(rx_handle, buffer, chunk * ch * sizeof(int16_t), &bytes_read, portMAX_DELAY);
-        if (ret == ESP_OK && bytes_read == chunk * ch * sizeof(int16_t))
-        {
+        if (i2s_channel_read(rx_handle, buffer, chunk * ch * 2, &bytes_read, portMAX_DELAY) == ESP_OK) {
             afe_handle->feed(afe_data, buffer);
         }
     }
-
     free(buffer);
     vTaskDelete(NULL);
 }
@@ -68,29 +56,14 @@ void feed_Task(void *arg)
 void detect_Task(void *arg)
 {
     esp_afe_sr_data_t *afe_data = (esp_afe_sr_data_t *)arg;
-    int chunk = afe_handle->get_fetch_chunksize(afe_data);
-    int16_t *buffer = (int16_t *)malloc(chunk * sizeof(int16_t));
-    assert(buffer);
+    ESP_LOGI(TAG, "Listening for 'Hi, Lexin'...");
 
-    ESP_LOGI(TAG, "Listening for wake word...");
-
-    while (task_flag)
-    {
+    while (task_flag) {
         afe_fetch_result_t *res = afe_handle->fetch(afe_data);
-        if (!res || res->ret_value == ESP_FAIL)
-        {
-            ESP_LOGE(TAG, "AFE fetch failed");
-            break;
-        }
-
-        if (res->wakeup_state == WAKENET_DETECTED)
-        {
-            ESP_LOGI(TAG, "*** WAKE WORD DETECTED ***");
-            ESP_LOGI(TAG, "Model index: %d, Word index: %d", res->wakenet_model_index, res->wake_word_index);
+        if (res && res->wakeup_state == WAKENET_DETECTED) {
+            ESP_LOGI(TAG, "*** WAKE WORD DETECTED! ***");
         }
     }
-
-    free(buffer);
     vTaskDelete(NULL);
 }
 
@@ -101,19 +74,30 @@ extern "C" void app_main()
 
     ESP_LOGI(TAG, "Loading models...");
     srmodel_list_t *models = esp_srmodel_init("model");
-    if (!models || models->num == 0)
-    {
-        ESP_LOGE(TAG, "No models found in flash!");
-        vTaskDelay(pdMS_TO_TICKS(3000));
+    if (!models || models->num == 0) {
+        ESP_LOGE(TAG, "No models! Flash wn9_hilexin.packed.bin to 0x110000");
         esp_restart();
     }
 
-    const char *input_fmt = "M"; // Single mic input
-    afe_config_t *afe_config = afe_config_init(input_fmt, models, AFE_TYPE_SR, AFE_MODE_LOW_COST);
-    if (!afe_config)
-    {
-        ESP_LOGE(TAG, "Failed to init AFE config");
-        return;
+    char *model_name = NULL;
+    for (int i = 0; i < models->num; i++) {
+        if (strstr(models->model_name[i], "wn9_hilexin")) {
+            model_name = models->model_name[i];
+            ESP_LOGI(TAG, "Using model: %s", model_name);
+            break;
+        }
+    }
+    if (!model_name) {
+        ESP_LOGE(TAG, "wn9_hilexin not found!");
+        esp_restart();
+    }
+
+    // Correct AFE config
+    const char *input_fmt = "M";
+    afe_config_t *afe_config = afe_config_init(input_fmt, model_name, AFE_TYPE_SR, AFE_MODE_LOW_COST);
+    if (!afe_config) {
+        ESP_LOGE(TAG, "AFE config failed");
+        esp_restart();
     }
 
     afe_handle = esp_afe_handle_from_config(afe_config);
@@ -121,6 +105,8 @@ extern "C" void app_main()
     afe_config_free(afe_config);
 
     task_flag = 1;
-    xTaskCreatePinnedToCore(feed_Task, "feed", 2048, (void *)afe_data, 5, NULL, 0);
-    xTaskCreatePinnedToCore(detect_Task, "detect", 2048, (void *)afe_data, 5, NULL, 1);
+    xTaskCreatePinnedToCore(feed_Task, "feed", 4096, afe_data, 5, NULL, 0);
+    xTaskCreatePinnedToCore(detect_Task, "detect", 4096, afe_data, 5, NULL, 1);
+
+    vTaskDelay(portMAX_DELAY);
 }
