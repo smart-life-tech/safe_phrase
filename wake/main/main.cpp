@@ -1,10 +1,3 @@
-/*
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "freertos/FreeRTOS.h"
@@ -14,8 +7,8 @@
 #include "esp_afe_sr_models.h"
 #include "esp_mn_iface.h"
 #include "esp_mn_models.h"
-#include "esp_board_init.h"
-#include "model_path.h"
+//#include "esp_board_init.h"
+//#include "model_path.h"
 #include "string.h"
 
 int detect_flag = 0;
@@ -87,7 +80,7 @@ void detect_Task(void *arg)
 
 void app_main()
 {
-    ESP_ERROR_CHECK(esp_board_init(16000, 1, 16));
+    //ESP_ERROR_CHECK(esp_board_init(16000, 1, 16));
     // ESP_ERROR_CHECK(esp_sdcard_init("/sdcard", 10));
 
     srmodel_list_t *models = esp_srmodel_init("model");
