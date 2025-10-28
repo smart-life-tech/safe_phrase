@@ -10,7 +10,7 @@
 #include "dl_lib_coefgetter_if.h"
 #include "model_path.h"
 #include "string.h"
-//#include "hilexin.h"
+// #include "hilexin.h"
 
 extern const esp_wn_iface_t esp_wn_handle;
 extern const model_coeff_getter_t get_coeff_hilexin_wn5X3;
@@ -59,11 +59,58 @@ extern "C" void app_main(void)
     // model_iface_data_t *model_data = wakenet->create(model_name, DET_MODE_95);
     // ESP_LOGI(TAG, "Initialized lexin...");
 
-    esp_wn_iface_t *wakenet = (esp_wn_iface_t *)&esp_wn_handle;
-    ESP_LOGI(TAG, "Initializing lexin...");
-    model_iface_data_t *model_data = wakenet->create(&get_coeff_hilexin_wn5X3, DET_MODE_95);
-    ESP_LOGI(TAG, "Initialized lexin...");
+    // esp_wn_iface_t *wakenet = (esp_wn_iface_t *)&esp_wn_handle;
+    // ESP_LOGI(TAG, "Initializing lexin...");
+    // model_iface_data_t *model_data = wakenet->create(&get_coeff_hilexin_wn5X3, DET_MODE_95);
+    // ESP_LOGI(TAG, "Initialized lexin...");
 
+    srmodel_list_t *models = esp_srmodel_init(NULL); // NULL = use embedded models
+    if (!models || models->num == 0)
+    {
+        ESP_LOGE(TAG, "No models found!");
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        esp_restart();
+    }
+
+    ESP_LOGI(TAG, "Found %d models:", models->num);
+    esp_srmodel_print(models); // Prints all available models
+
+    char *model_name = esp_srmodel_filter(models, ESP_WN_PREFIX, "hilexin");
+    if (!model_name)
+    {
+        ESP_LOGE(TAG, "hilexin model not found!");
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        esp_restart();
+    }
+    ESP_LOGI(TAG, "Using model: '%s'", model_name); // ← This should now print!
+
+    esp_wn_iface_t *wakenet = (esp_wn_iface_t *)esp_wn_handle_from_name(model_name);
+    if (!wakenet)
+    {
+        ESP_LOGE(TAG, "No interface for %s", model_name);
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        esp_restart();
+    }
+
+    model_iface_data_t *model_data = wakenet->create(model_name, DET_MODE_95);
+    if (!model_data)
+    {
+        ESP_LOGE(TAG, "create() failed for %s", model_name);
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        esp_restart();
+    }
+
+    int chunk_size = wakenet->get_samp_chunksize(model_data);
+    int16_t *buffer = (int16_t *)malloc(chunk_size * sizeof(int16_t));
+    if (!buffer)
+    {
+        ESP_LOGE(TAG, "malloc failed");
+        wakenet->destroy(model_data);
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        esp_restart();
+    }
+
+    ESP_LOGI(TAG, "Listening for 'Hi, Lexin'...");
     int chunk_size = wakenet->get_samp_chunksize(model_data);
     int16_t *buffer = (int16_t *)malloc(chunk_size * sizeof(int16_t));
 
