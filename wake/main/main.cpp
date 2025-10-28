@@ -96,7 +96,43 @@ extern "C" void app_main(void)
         ESP_LOGI(TAG, "Wakenet interface found for '%s'", model_name);
     }
     ESP_LOGI(TAG, "Wakenet interface found for '%s'", model_name);
-    //extern const model_coeff_getter_t get_coeff_hilexin_wn9;
+   //=====================================================================================
+    const esp_wn_iface_t *wakenet = &WAKENET9;
+    model_name = NULL;
+    const model_coeff_getter_t *coeff = NULL;
+
+    ESP_LOGI(TAG, "Found %d embedded model(s):", models->num);
+    for (int i = 0; i < models->num; i++)
+    {
+        if (models->model_name[i] && strlen(models->model_name[i]) > 0)
+        {
+            ESP_LOGI(TAG, "  [%d] '%s'", i, models->model_name[i]);
+            if (strstr(models->model_name[i], "hilexin"))
+            {
+                model_name = models->model_name[i];
+                coeff = models->model_coeff[i];
+            }
+        }
+    }
+
+    if (!coeff)
+    {
+        ESP_LOGE(TAG, "No valid HiLexin model coefficients found!");
+        return;
+    }
+
+    ESP_LOGI(TAG, "Using model: '%s'", model_name);
+
+    // ✅ Create the model using coefficient pointer, not name
+    model_iface_data_t *model_data = wakenet->create((void *)coeff, DET_MODE_95);
+    if (!model_data)
+    {
+        ESP_LOGE(TAG, "Failed to create WakeNet instance!");
+        return;
+    }
+
+    ESP_LOGI(TAG, "WakeNet created successfully!");
+    // extern const model_coeff_getter_t get_coeff_hilexin_wn9;
     model_iface_data_t *model_data = wakenet->create("wn9_hilexin", DET_MODE_95);
     if (!model_data)
     {
