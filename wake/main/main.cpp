@@ -41,14 +41,11 @@ static void i2s_init(void)
             .bclk = I2S_BCK_IO,
             .ws = I2S_WS_IO,
             .din = I2S_SD_IO,
-            .mclk = I2S_GPIO_UNUSED, // or actual GPIO if you're using MCLK
-            .dout = I2S_GPIO_UNUSED, // unused for RX
-            .invert_flags = {
-                .mclk = false,
-                .bclk = false,
-                .ws = false,
-                .din = false}}};
-    i2s_channel_init_std_mode(rx_handle, &std_cfg);
+            .mclk = I2S_GPIO_UNUSED,  // or actual GPIO if you're using MCLK
+            .dout = I2S_GPIO_UNUSED,  // unused for RX
+            .invert_flags = {0, 0, 0} // no inversion
+        }
+    } i2s_channel_init_std_mode(rx_handle, &std_cfg);
     i2s_channel_enable(rx_handle);
 }
 extern "C" void app_main(void)
