@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 # Make sure local components and ADF components are visible to the build
 list(APPEND EXTRA_COMPONENT_DIRS
-    ${CMAKE_CURRENT_LIST_DIR}/components
+    ${CMAKE_CURRENT_LIST_DIR}/components/esp-adf-libs
     ${CMAKE_CURRENT_LIST_DIR}/components/esp-adf/components
     #${CMAKE_CURRENT_LIST_DIR}/components/esp_sr
 )
