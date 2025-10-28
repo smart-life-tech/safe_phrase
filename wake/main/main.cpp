@@ -108,7 +108,7 @@ extern "C" void app_main(void)
     {
         ESP_LOGI(TAG, "Model created successfully for '%s'", model_name);
     }
-    ESPLOGI(TAG, "Model created successfully for '%s'", model_name);
+    ESP_LOGI(TAG, "Model created successfully for '%s'", model_name);
 
     int chunk_size = wakenet->get_samp_chunksize(model_data);
     int16_t *buffer = (int16_t *)malloc(chunk_size * sizeof(int16_t));
