@@ -118,7 +118,7 @@ extern "C" void app_main()
             break;
         }
     }
-    afe_config_t *afe_config = afe_config_init(input_fmt, models, AFE_TYPE_SR, AFE_MODE_LOW_COST);
+    afe_config_t *afe_config = afe_config_init(input_fmt, models, AFE_TYPE_SR, AFE_MODE_ULTRA_LOW_COST);
     if (!afe_config)
     {
         ESP_LOGE(TAG, "Failed to init AFE config");
