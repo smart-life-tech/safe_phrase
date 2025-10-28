@@ -73,7 +73,10 @@ extern "C" void app_main(void)
     }
 
     ESP_LOGI(TAG, "Found %d models:", models->num);
-    esp_srmodel_print(models); // Prints all available models
+    for (int i = 0; i < models->num; ++i)
+    {
+        ESP_LOGI(TAG, "Model %d: %s", i, models->model[i]);
+    }
 
     char *model_name = esp_srmodel_filter(models, ESP_WN_PREFIX, "hilexin");
     if (!model_name)
@@ -111,8 +114,8 @@ extern "C" void app_main(void)
     }
 
     ESP_LOGI(TAG, "Listening for 'Hi, Lexin'...");
-    int chunk_size = wakenet->get_samp_chunksize(model_data);
-    int16_t *buffer = (int16_t *)malloc(chunk_size * sizeof(int16_t));
+    // int chunk_size = wakenet->get_samp_chunksize(model_data);
+    // int16_t *buffer = (int16_t *)malloc(chunk_size * sizeof(int16_t));
 
     while (true)
     {
