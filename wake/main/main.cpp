@@ -44,10 +44,10 @@ static void i2s_init(void)
             .mclk = I2S_GPIO_UNUSED, // or actual GPIO if you're using MCLK
             .dout = I2S_GPIO_UNUSED, // unused for RX
             .invert_flags = {
-                .mclk_inv = false,
-                .bclk_inv = false,
-                .ws_inv = false,
-                .din_inv = false}}};
+                .mclk = false,
+                .bclk = false,
+                .ws = false,
+                .din = false}}};
     i2s_channel_init_std_mode(rx_handle, &std_cfg);
     i2s_channel_enable(rx_handle);
 }
@@ -74,7 +74,7 @@ extern "C" void app_main(void)
         if (models->model_name[i] && strlen(models->model_name[i]) > 0)
         {
             ESP_LOGI(TAG, "  [%d] '%s'", i, models->model_name[i]);
-            if (strstr(models->model_name[i], "HiLexin") || strstr(models->model_name[i], "hilexin"))
+            if (strstr(models->model_name[i], "HiLexin") || strstr(models->model_name[i], "hilexin") || strstr(models->model_name[i], "wn9_hilexin"))
             {
                 model_name = models->model_name[i];
             }
