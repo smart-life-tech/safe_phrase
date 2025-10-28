@@ -4,7 +4,7 @@
 #include "freertos/task.h"
 #include "driver/i2s_std.h"
 #include "esp_log.h"
-#include "hilexin_wn5X3.h"
+#include "hilexin_wn9.h"
 #include "esp_wn_iface.h"
 #include "esp_wn_models.h"
 #include "dl_lib_coefgetter_if.h"
@@ -13,7 +13,7 @@
 // #include "hilexin.h"
 
 extern const esp_wn_iface_t esp_wn_handle;
-extern const model_coeff_getter_t get_coeff_hilexin_wn5X3;
+extern const model_coeff_getter_t get_coeff_hilexin_wn9;
 
 #define TAG "WAKE"
 #define I2S_BCK_IO (gpio_num_t)26
@@ -53,7 +53,7 @@ extern "C" void app_main(void)
     srmodel_list_t *models = esp_srmodel_init(NULL);
     if (!models || models->num == 0)
     {
-        ESP_LOGE(TAG, "No embedded models! Enable 'Hi, Lexin (WN5X3)' in menuconfig.");
+        ESP_LOGE(TAG, "No embedded models! Enable 'Hi, Lexin (WN9)' in menuconfig.");
         vTaskDelay(pdMS_TO_TICKS(5000));
         esp_restart();
     }
@@ -61,19 +61,20 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "Found %d embedded model(s):", models->num);
 
     // Safely print model names
+    // Find WN9 model
     char *model_name = NULL;
     for (int i = 0; i < models->num; i++)
     {
         if (models->model_name[i] && strlen(models->model_name[i]) > 0)
         {
             ESP_LOGI(TAG, "  [%d] '%s'", i, models->model_name[i]);
-            if (strstr(models->model_name[i], "HiLexin") || strstr(models->model_name[i], "hilexin") || strstr(models->model_name[i], "wn9_hilexin"))
+            if (strstr(models->model_name[i], "wn9_hilexin"))
             {
                 model_name = models->model_name[i];
+                break;
             }
         }
     }
-
     if (!model_name)
     {
         ESP_LOGE(TAG, "No HiLexin model found! Check menuconfig.");
