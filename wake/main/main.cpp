@@ -36,7 +36,7 @@ void i2s_init()
             .bclk = I2S_BCK_IO,
             .ws = I2S_WS_IO,
             .din = I2S_SD_IO,
-            .mclk = I2S_GPIO_UNUSED,
+           
         },
     };
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_handle, &std_cfg));
