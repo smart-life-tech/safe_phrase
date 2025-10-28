@@ -48,8 +48,7 @@ static void i2s_init(void)
                 .bclk_inv = false,
                 .ws_inv = false,
                 .dout_inv = false,
-                .din_inv = false}},
-    };
+                .din_inv = false}}};
     i2s_channel_init_std_mode(rx_handle, &std_cfg);
     i2s_channel_enable(rx_handle);
 }
