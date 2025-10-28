@@ -6,6 +6,7 @@ list(APPEND EXTRA_COMPONENT_DIRS
     ${CMAKE_CURRENT_LIST_DIR}/components/esp-adf/components
     ${CMAKE_CURRENT_LIST_DIR}/components/esp_sr
 )
+set(PARTITION_TABLE_FILENAME "partitions.csv")
 
 # Compute ADF version (optional metadata) and export as a compile define project-wide.
 # We run this here at project-level so we can safely call add_compile_definitions().
