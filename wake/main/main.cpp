@@ -112,7 +112,7 @@ extern "C" void app_main()
     char *model_name = NULL;
     for (int i = 0; i < models->num; i++)
     {
-        if (strstr(models->model_name[i], "wn9_hilexin"))
+        if (strstr(models->model_name[i], "wn9_hilexin")||strstr(models->model_name[i], "wn9_alexa"))
         {
             model_name = models->model_name[i];
             break;
