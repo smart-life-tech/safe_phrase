@@ -73,10 +73,10 @@ extern "C" void app_main(void)
     }
 
     ESP_LOGI(TAG, "Found %d models:", models->num);
-    for (int i = 0; i < models->num; ++i)
-    {
-        ESP_LOGI(TAG, "Model %d: %s", i, models->model[i]);
-    }
+    // for (int i = 0; i < models->num; ++i)
+    // {
+    //     ESP_LOGI(TAG, "Model %d: %s", i, models->model[i]);
+    // }
 
     char *model_name = esp_srmodel_filter(models, ESP_WN_PREFIX, "hilexin");
     if (!model_name)
