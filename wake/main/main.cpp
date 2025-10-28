@@ -50,7 +50,7 @@ extern "C" void app_main(void)
     i2s_init();
 
     // Use embedded models
-    srmodel_list_t *models = esp_srmodel_init(NULL);
+    srmodel_list_t *models = esp_srmodel_init("model");
     if (!models || models->num == 0)
     {
         ESP_LOGE(TAG, "No embedded models! Enable 'Hi, Lexin (WN9)' in menuconfig.");
@@ -68,7 +68,7 @@ extern "C" void app_main(void)
         if (models->model_name[i] && strlen(models->model_name[i]) > 0)
         {
             ESP_LOGI(TAG, "  [%d] '%s'", i, models->model_name[i]);
-            if (strstr(models->model_name[i], "wn9_hilexin"))
+            if (strstr(models->model_name[i], "wn9_hilexin")|| strstr(models->model_name[i], "wn9_alexa"))
             {
                 model_name = models->model_name[i];
                 break;
