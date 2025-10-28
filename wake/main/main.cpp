@@ -4,7 +4,7 @@
 #include "freertos/task.h"
 #include "driver/i2s_std.h"
 #include "esp_log.h"
-//#include "hilexin_wn9.h"
+// #include "hilexin_wn9.h"
 #include "esp_wn_iface.h"
 #include "esp_wn_models.h"
 #include "dl_lib_coefgetter_if.h"
@@ -12,8 +12,8 @@
 #include "string.h"
 // #include "hilexin.h"
 
-//extern const esp_wn_iface_t esp_wn_handle;
-//extern const model_coeff_getter_t get_coeff_hilexin_wn9;
+// extern const esp_wn_iface_t esp_wn_handle;
+// extern const model_coeff_getter_t get_coeff_hilexin_wn9;
 
 #define TAG "WAKE"
 #define I2S_BCK_IO (gpio_num_t)26
@@ -68,7 +68,7 @@ extern "C" void app_main(void)
         if (models->model_name[i] && strlen(models->model_name[i]) > 0)
         {
             ESP_LOGI(TAG, "  [%d] '%s'", i, models->model_name[i]);
-            if (strstr(models->model_name[i], "wn9_hilexin")|| strstr(models->model_name[i], "wn9_alexa"))
+            if (strstr(models->model_name[i], "wn9_hilexin") || strstr(models->model_name[i], "wn9_alexa"))
             {
                 model_name = models->model_name[i];
                 break;
@@ -91,13 +91,21 @@ extern "C" void app_main(void)
         vTaskDelay(pdMS_TO_TICKS(5000));
         esp_restart();
     }
-
+    else
+    {
+        ESP_LOGI(TAG, "Wakenet interface found for '%s'", model_name);
+    }
+    ESP_LOGI(TAG, "Wakenet interface founded for '%s'", model_name);
     model_iface_data_t *model_data = wakenet->create(model_name, DET_MODE_95);
     if (!model_data)
     {
         ESP_LOGE(TAG, "Failed to create model!");
         vTaskDelay(pdMS_TO_TICKS(5000));
         esp_restart();
+    }
+    else
+    {
+        ESP_LOGI(TAG, "Model created successfully for '%s'", model_name);
     }
 
     int chunk_size = wakenet->get_samp_chunksize(model_data);
@@ -108,6 +116,10 @@ extern "C" void app_main(void)
         wakenet->destroy(model_data);
         vTaskDelay(pdMS_TO_TICKS(5000));
         esp_restart();
+    }
+    else
+    {
+        ESP_LOGI(TAG, "Buffer allocated with chunk size: %d", chunk_size);
     }
 
     ESP_LOGI(TAG, "Listening for 'Hi, Lexin' wake word...");
