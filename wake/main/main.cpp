@@ -121,6 +121,6 @@ extern "C" void app_main()
     afe_config_free(afe_config);
 
     task_flag = 1;
-    xTaskCreatePinnedToCore(feed_Task, "feed", 4096, (void *)afe_data, 5, NULL, 0);
-    xTaskCreatePinnedToCore(detect_Task, "detect", 4096, (void *)afe_data, 5, NULL, 1);
+    xTaskCreatePinnedToCore(feed_Task, "feed", 2048, (void *)afe_data, 5, NULL, 0);
+    xTaskCreatePinnedToCore(detect_Task, "detect", 2048, (void *)afe_data, 5, NULL, 1);
 }
