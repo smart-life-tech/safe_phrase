@@ -77,13 +77,44 @@ extern "C" void app_main(void)
     // {
     //     ESP_LOGI(TAG, "Model %d: %s", i, models->model[i]);
     // }
+    // Option 1: Case-insensitive prefix
+    char *model_name1 = esp_srmodel_filter(models, "HiLexin", NULL);
+    if (!model_name1)
+    {
+        ESP_LOGE(TAG, "HiLexin model not found!");
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        // esp_restart();
+    }
 
+    // Option 2: Full name match (if you see it in logs)
+    char *model_name2 = esp_srmodel_filter(models, "HiLexin_WN5X3", NULL);
+    if (!model_name2)
+    {
+        ESP_LOGE(TAG, "HiLexin_WN5X3 model not found!");
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        // esp_restart();
+    }
+
+    // Option 3: Try lowercase
+    char *model_name3 = esp_srmodel_filter(models, "hilexin", NULL);
+    if (!model_name3)
+    {
+        ESP_LOGE(TAG, "hilexin model not found!");
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        // esp_restart();
+    }
+    // Option 4: Use defined prefix constant
     char *model_name = esp_srmodel_filter(models, ESP_WN_PREFIX, "hilexin");
     if (!model_name)
     {
         ESP_LOGE(TAG, "hilexin model not found!");
         vTaskDelay(pdMS_TO_TICKS(5000));
-        esp_restart();
+        // esp_restart();
+    }
+    ESP_LOGI(TAG, "Found %d embedded model(s):", models->num);
+    for (int i = 0; i < models->num; i++)
+    {
+        ESP_LOGI(TAG, "  [%d] '%s'", i, models->model_name[i]);
     }
     ESP_LOGI(TAG, "Using model: '%s'", model_name); // ← This should now print!
 
@@ -92,7 +123,7 @@ extern "C" void app_main(void)
     {
         ESP_LOGE(TAG, "No interface for %s", model_name);
         vTaskDelay(pdMS_TO_TICKS(5000));
-        esp_restart();
+        // esp_restart();
     }
 
     model_iface_data_t *model_data = wakenet->create(model_name, DET_MODE_95);
