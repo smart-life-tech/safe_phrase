@@ -97,7 +97,7 @@ extern "C" void app_main(void)
     }
     ESP_LOGI(TAG, "Wakenet interface found for '%s'", model_name);
    
-    // extern const model_coeff_getter_t get_coeff_hilexin_wn9;
+    
     const void *model_datas = models->model_data[0];
     model_iface_data_t *model_data = wakenet->create(model_datas, DET_MODE_95);
     if (!model_data)
