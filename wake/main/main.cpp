@@ -29,6 +29,8 @@ static void i2s_init(void)
         .role = I2S_ROLE_MASTER,
         .dma_desc_num = 8,
         .dma_frame_num = 240,
+        .auto_clear = true, // or false depending on your needs
+        .intr_priority = 0  // default interrupt priority
     };
     i2s_new_channel(&chan_cfg, NULL, &rx_handle);
 
@@ -39,7 +41,14 @@ static void i2s_init(void)
             .bclk = I2S_BCK_IO,
             .ws = I2S_WS_IO,
             .din = I2S_SD_IO,
-        },
+            .mclk = I2S_GPIO_UNUSED, // or actual GPIO if you're using MCLK
+            .dout = I2S_GPIO_UNUSED, // unused for RX
+            .invert_flags = {
+                .mclk_inv = false,
+                .bclk_inv = false,
+                .ws_inv = false,
+                .dout_inv = false,
+                .din_inv = false}},
     };
     i2s_channel_init_std_mode(rx_handle, &std_cfg);
     i2s_channel_enable(rx_handle);
