@@ -11,9 +11,9 @@
 #include "esp_wn_models.h"
 
 #define TAG "WAKE"
-#define I2S_BCK_IO 4
-#define I2S_WS_IO 5
-#define I2S_SD_IO 6
+#define I2S_BCK_IO (gpio_num_t)4
+#define I2S_WS_IO  (gpio_num_t)5
+#define I2S_SD_IO  (gpio_num_t)6
 
 static i2s_chan_handle_t rx_handle;
 static esp_afe_sr_iface_t *afe_handle = NULL;
