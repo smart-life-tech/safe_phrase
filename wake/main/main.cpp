@@ -18,7 +18,8 @@
 #define I2S_BCK_IO GPIO_NUM_26
 #define I2S_WS_IO GPIO_NUM_25
 #define I2S_SD_IO GPIO_NUM_22
-#elif s3
+#endif
+#ifdef s3
 #define I2S_BCK_IO (gpio_num_t)4
 #define I2S_WS_IO  (gpio_num_t)5
 #define I2S_SD_IO  (gpio_num_t)6
