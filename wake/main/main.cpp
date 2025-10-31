@@ -98,7 +98,7 @@ extern "C" void app_main()
 {
     ESP_LOGI(TAG, "Initializing I2S...");
     i2s_init();
-
+    ESP_LOGI(TAG, "Free PSRAM: %d bytes", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     ESP_LOGI(TAG, "Loading models...");
     srmodel_list_t *models = esp_srmodel_init("model");
     if (!models || models->num == 0)
@@ -112,7 +112,7 @@ extern "C" void app_main()
     char *model_name = NULL;
     for (int i = 0; i < models->num; i++)
     {
-        if (strstr(models->model_name[i], "wn9_hilexin")||strstr(models->model_name[i], "wn9_alexa"))
+        if (strstr(models->model_name[i], "wn9_hilexin") || strstr(models->model_name[i], "wn9_alexa"))
         {
             model_name = models->model_name[i];
             break;
