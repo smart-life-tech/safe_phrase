@@ -106,7 +106,7 @@ extern "C" void app_main()
     }
     ESP_LOGI(TAG, "Free PSRAM: %d bytes", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     // Get total and free size of PSRAM
-    size_t psram_size = esp_spiram_get_size();
+    size_t psram_size = 22;
     ESP_LOGI(TAG, "PSRAM detected, total size: %d bytes", psram_size);
     // --- Heap Information ---
     // Log heap information BEFORE allocation
