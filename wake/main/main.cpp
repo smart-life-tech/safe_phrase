@@ -98,12 +98,7 @@ void detect_Task(void *arg)
 
 extern "C" void app_main()
 { // Check if PSRAM is available
-    if (!esp_spiram_is_initialized())
-    {
-        ESP_LOGE(TAG, "PSRAM not initialized!");
-        // Depending on the application, you might want to halt or handle this error
-        // return;
-    }
+
     ESP_LOGI(TAG, "Free PSRAM: %d bytes", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     // Get total and free size of PSRAM
     size_t psram_size = 22;
