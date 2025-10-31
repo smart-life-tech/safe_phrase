@@ -24,8 +24,8 @@ void i2s_init()
     i2s_chan_config_t chan_cfg = {
         .id = I2S_NUM_0,
         .role = I2S_ROLE_MASTER,
-        .dma_desc_num = 8,
-        .dma_frame_num = 240,
+        .dma_desc_num = 4,
+        .dma_frame_num = 128,
     };
     ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, NULL, &rx_handle));
 
@@ -96,6 +96,7 @@ void detect_Task(void *arg)
 
 extern "C" void app_main()
 {
+    ESP_LOGI(TAG, "Free PSRAM: %d bytes", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     ESP_LOGI(TAG, "Initializing I2S...");
     i2s_init();
     ESP_LOGI(TAG, "Free PSRAM: %d bytes", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
@@ -118,7 +119,7 @@ extern "C" void app_main()
             break;
         }
     }
-    afe_config_t *afe_config = afe_config_init(input_fmt, models, AFE_TYPE_SR, AFE_MODE_LOW_COST);
+    afe_config_t *afe_config = afe_config_init(input_fmt, models, AFE_TYPE_SR, AFE_MODE_BASIC);
     if (!afe_config)
     {
         ESP_LOGE(TAG, "Failed to init AFE config");
