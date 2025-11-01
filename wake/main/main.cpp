@@ -260,9 +260,9 @@ extern "C" void app_main()
     }
     // modify wakenet detection threshold
     afe_handle->set_wakenet_threshold(afe_data, 1, 0.6); // set model1's threshold to 0.6
-    afe_handle->set_wakenet_threshold(afe_data, 2, 0.6); // set model2's threshold to 0.6
-    afe_handle->reset_wakenet_threshold(afe_data, 1);    // reset model1's threshold to default
-    afe_handle->reset_wakenet_threshold(afe_data, 2);    // reset model2's threshold to default
+    // afe_handle->set_wakenet_threshold(afe_data, 2, 0.6); // set model2's threshold to 0.6
+    // afe_handle->reset_wakenet_threshold(afe_data, 1);    // reset model1's threshold to default
+    // afe_handle->reset_wakenet_threshold(afe_data, 2);    // reset model2's threshold to default
     afe_config_free(afe_config);
 
     task_flag = 1;
