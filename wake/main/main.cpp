@@ -249,7 +249,7 @@ extern "C" void app_main()
         afe_config_free(afe_config);
         return;
     }
-   // esp_afe_sr_set_wakenet_sensitivity(afe_handle, 0.7f);
+    // esp_afe_sr_set_wakenet_sensitivity(afe_handle, 0.7f);
 
     esp_afe_sr_data_t *afe_data = afe_handle->create_from_config(afe_config);
     if (!afe_data)
@@ -259,7 +259,8 @@ extern "C" void app_main()
         return;
     }
     // modify wakenet detection threshold
-    //afe_handle->set_wakenet_threshold(afe_data, 1, 0.6); // set model1's threshold to 0.6
+    afe_handle->set_wakenet_model(afe_data, "wn9_alexa"); // ← FORCE ALEXA
+    afe_handle->set_wakenet_threshold(afe_data, 1, 0.5);  // set model1's threshold to 0.6
     // afe_handle->set_wakenet_threshold(afe_data, 2, 0.6); // set model2's threshold to 0.6
     // afe_handle->reset_wakenet_threshold(afe_data, 1);    // reset model1's threshold to default
     // afe_handle->reset_wakenet_threshold(afe_data, 2);    // reset model2's threshold to default
