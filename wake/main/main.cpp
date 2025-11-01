@@ -118,7 +118,7 @@ void feed_Task(void *arg)
         /* compute RMS and log first few samples for debugging */
         size_t got_samples = bytes_read / sizeof(int16_t);
         float rms = compute_rms(buffer, got_samples);
-        ESP_LOGD(TAG, "I2S read %d bytes (%d samples), RMS=%.2f", (int)bytes_read, (int)got_samples, rms);
+        ESP_LOGI(TAG, "I2S read %d bytes (%d samples), RMS=%.2f", (int)bytes_read, (int)got_samples, rms);
 
         /* print first 8 samples occasionally to check levels/format */
         static int print_count = 0;
@@ -173,7 +173,7 @@ void detect_Task(void *arg)
         }
 
         /* debug print of vad/wakenet state */
-        ESP_LOGD(TAG, "AFE fetch: vad=%d, wakeup_state=%d, model_idx=%d, word_idx=%d",
+        ESP_LOGI(TAG, "AFE fetch: vad=%d, wakeup_state=%d, model_idx=%d, word_idx=%d",
                  res->vad_state, res->wakeup_state, res->wakenet_model_index, res->wake_word_index);
 
         if (res->wakeup_state == WAKENET_DETECTED)
