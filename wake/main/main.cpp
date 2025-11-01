@@ -13,6 +13,7 @@
 #include "esp_wn_models.h"
 #include "esp_system.h"
 #include "esp_heap_caps.h"
+#include "esp_afe_sr_models.h"
 
 #define TAG "WAKE_DBG"
 #define s3
