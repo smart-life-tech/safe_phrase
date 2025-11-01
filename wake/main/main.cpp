@@ -33,14 +33,14 @@ void i2s_init()
     i2s_chan_config_t chan_cfg = {
         .id = I2S_NUM_0,
         .role = I2S_ROLE_MASTER,
-        .dma_desc_num = 8,
-        .dma_frame_num = 256,
+        .dma_desc_num = 16,
+        .dma_frame_num = 512,
     };
     ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, NULL, &rx_handle));
 
     i2s_std_config_t std_cfg = {
         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(16000),
-        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
+        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_32BIT, I2S_SLOT_MODE_MONO),
         .gpio_cfg = {
             .bclk = I2S_BCK_IO,
             .ws = I2S_WS_IO,
