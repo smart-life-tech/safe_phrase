@@ -118,12 +118,14 @@ void feed_Task(void *arg)
         /* compute RMS and log first few samples for debugging */
         size_t got_samples = bytes_read / sizeof(int16_t);
         float rms = compute_rms(buffer, got_samples);
-        ESP_LOGI(TAG, "I2S read %d bytes (%d samples), RMS=%.2f", (int)bytes_read, (int)got_samples, rms);
+        ESP_LOGD(TAG, "I2S read %d bytes (%d samples), RMS=%.2f", (int)bytes_read, (int)got_samples, rms);
 
         /* print first 8 samples occasionally to check levels/format */
         static int print_count = 0;
         if ((print_count++ % 50) == 0)
         {
+            ESP_LOGI(TAG, "I2S read %d bytes (%d samples), RMS=%.2f", (int)bytes_read, (int)got_samples, rms);
+
             ESP_LOGI(TAG, "samples[0..7]: %d,%d,%d,%d,%d,%d,%d,%d",
                      buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7]);
         }
@@ -173,7 +175,7 @@ void detect_Task(void *arg)
         }
 
         /* debug print of vad/wakenet state */
-        ESP_LOGI(TAG, "AFE fetch: vad=%d, wakeup_state=%d, model_idx=%d, word_idx=%d",
+        ESP_LOGD(TAG, "AFE fetch: vad=%d, wakeup_state=%d, model_idx=%d, word_idx=%d",
                  res->vad_state, res->wakeup_state, res->wakenet_model_index, res->wake_word_index);
 
         if (res->wakeup_state == WAKENET_DETECTED)
@@ -261,10 +263,10 @@ extern "C" void app_main()
     }
     // modify wakenet detection threshold
     // Select model by index (0 = wn9_alexa)
-    //esp_afe_sr_set_wakenet(afe_handle, afe_data, 0);
+    // esp_afe_sr_set_wakenet(afe_handle, afe_data, 0);
 
     // Lower sensitivity = easier detection (0.0 = hard, 1.0 = easy)
-    //esp_afe_sr_set_wakenet_sensitivity(afe_handle, 0.7f); // 0.7 = balanced
+    // esp_afe_sr_set_wakenet_sensitivity(afe_handle, 0.7f); // 0.7 = balanced
     // afe_handle->set_wakenet_threshold(afe_data, 2, 0.6); // set model2's threshold to 0.6
     // afe_handle->reset_wakenet_threshold(afe_data, 1);    // reset model1's threshold to default
     // afe_handle->reset_wakenet_threshold(afe_data, 2);    // reset model2's threshold to default
