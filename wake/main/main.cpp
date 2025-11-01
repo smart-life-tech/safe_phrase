@@ -249,7 +249,7 @@ extern "C" void app_main()
         afe_config_free(afe_config);
         return;
     }
-    esp_afe_sr_set_wakenet_sensitivity(afe_handle, 0.7f);
+   // esp_afe_sr_set_wakenet_sensitivity(afe_handle, 0.7f);
 
     esp_afe_sr_data_t *afe_data = afe_handle->create_from_config(afe_config);
     if (!afe_data)
