@@ -14,8 +14,8 @@
 #include "esp_system.h"
 #include "esp_heap_caps.h"
 #include "esp_afe_sr_models.h"
-#include "esp_mn_iface.h"          // <-- ONLY ADDED THIS LINE
-#include "esp_mn_models.h"         // <-- ONLY ADDED THIS LINE
+#include "esp_mn_iface.h"
+#include "esp_mn_models.h"
 
 #define TAG "WAKE_DBG"
 #define s3
@@ -49,7 +49,7 @@ void i2s_init()
             .din = I2S_SD_IO,
         },
     };
-    std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_LEFT; // or RIGHT
+    std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_LEFT;
 
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_handle, &std_cfg));
     ESP_ERROR_CHECK(i2s_channel_enable(rx_handle));
@@ -86,7 +86,6 @@ void feed_Task(void *arg)
     ESP_LOGI(TAG, "Feed task chunk=%d channels=%d", chunk, ch);
 
     size_t samples = (size_t)chunk * (size_t)ch;
-    /* prefer PSRAM for large audio buffers if available */
     int16_t *buffer = (int16_t *)heap_caps_malloc(samples * sizeof(int16_t), MALLOC_CAP_DEFAULT | MALLOC_CAP_SPIRAM);
     if (!buffer)
     {
@@ -119,12 +118,10 @@ void feed_Task(void *arg)
             continue;
         }
 
-        /* compute RMS and log first few samples for debugging */
         size_t got_samples = bytes_read / sizeof(int16_t);
         float rms = compute_rms(buffer, got_samples);
         ESP_LOGD(TAG, "I2S read %d bytes (%d samples), RMS=%.2f", (int)bytes_read, (int)got_samples, rms);
 
-        /* print first 8 samples occasionally to check levels/format */
         static int print_count = 0;
         if ((print_count++ % 50) == 0)
         {
@@ -134,13 +131,11 @@ void feed_Task(void *arg)
                      buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7]);
         }
 
-        /* if RMS is near zero it's likely the mic/pins are wrong or muted */
         if (rms < 2.0f)
-        { // threshold tuned experimentally
+        {
             ESP_LOGW(TAG, "Low RMS (%.2f) - microphone may be silent or too quiet", rms);
         }
 
-        /* feed into AFE */
         afe_handle->feed(afe_data, buffer);
     }
 
@@ -164,15 +159,15 @@ void detect_Task(void *arg)
 
     // 20 GREETINGS TO DETECT (parallel, no wake word)
     const char *greetings[] = {
-        "hello","helloo","helo","hi","hii","hey","heyy",
-        "hallo","hullo","hallow","yo","oy","howdy",
-        "wassup","what","sup","morning","good morning",
-        "good afternoon","good evening"
-    };
-    #define NUM_GREETINGS 20
+        "hello", "helloo", "helo", "hi", "hii", "hey", "heyy",
+        "hallo", "hullo", "hallow", "yo", "oy", "howdy",
+        "wassup", "what", "sup", "morning", "good morning",
+        "good afternoon", "good evening"};
+#define NUM_GREETINGS 20
 
-    esp_mn_iface_t *mn_iface = esp_mn_handle_from_name("mn7_en");
-    model_iface_data_t *mn_data = mn_iface->create("mn7_en");
+    char model_name[] = "mn7_en";
+    esp_mn_iface_t *mn_iface = esp_mn_handle_from_name(model_name);
+    model_iface_data_t *mn_data = mn_iface->create(model_name, 0);
 
     ESP_LOGI(TAG, "Listening for 20 greetings in parallel...");
 
@@ -190,7 +185,6 @@ void detect_Task(void *arg)
             break;
         }
 
-        /* debug print of vad/wakenet state */
         ESP_LOGD(TAG, "AFE fetch: vad=%d, wakeup_state=%d, model_idx=%d, word_idx=%d",
                  res->vad_state, res->wakeup_state, res->wakenet_model_index, res->wake_word_index);
 
@@ -200,7 +194,6 @@ void detect_Task(void *arg)
             ESP_LOGI(TAG, "Model index: %d, Word index: %d", res->wakenet_model_index, res->wake_word_index);
         }
 
-        // PARALLEL GREETING DETECTION (no wake word needed)
         int cmd_id = mn_iface->detect(mn_data, res->data);
         if (cmd_id >= 0)
         {
@@ -222,8 +215,7 @@ void detect_Task(void *arg)
 
 extern "C" void app_main()
 {
-    /* set verbose debug for relevant modules */
-    esp_log_level_set("*", ESP_LOG_WARN); /* default */
+    esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set("WAKENET", ESP_LOG_DEBUG);
     esp_log_level_set("AFE", ESP_LOG_DEBUG);
     esp_log_level_set("WAKE_DBG", ESP_LOG_DEBUG);
@@ -233,7 +225,6 @@ extern "C" void app_main()
     heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
     heap_caps_print_heap_info(MALLOC_CAP_SPIRAM);
 
-    /* quick PSRAM allocation test (optional) */
     size_t buffer_size = 1 * 1024 * 1024;
     void *psram_buffer = heap_caps_malloc(buffer_size, MALLOC_CAP_SPIRAM);
     if (psram_buffer)
@@ -265,7 +256,7 @@ extern "C" void app_main()
         ESP_LOGI(TAG, "  [%d] %s", i, models->model_name[i] ? models->model_name[i] : "(null)");
     }
 
-    const char *input_fmt = "M"; // single mic
+    const char *input_fmt = "M";
 
     afe_config_t *afe_config = afe_config_init(input_fmt, models, AFE_TYPE_SR, AFE_MODE_LOW_COST);
     if (!afe_config)
@@ -292,9 +283,6 @@ extern "C" void app_main()
     afe_config_free(afe_config);
 
     task_flag = 1;
-    /* bigger stacks for audio threads */
     xTaskCreatePinnedToCore(feed_Task, "feed", 4096, (void *)afe_data, 6, NULL, 0);
     xTaskCreatePinnedToCore(detect_Task, "detect", 4096, (void *)afe_data, 6, NULL, 1);
-
-    /* app_main returns; main_task will continue */
 }
