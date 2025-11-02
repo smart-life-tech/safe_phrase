@@ -137,7 +137,7 @@ void feed_Task(void *arg)
             ESP_LOGW(TAG, "Low RMS (%.2f) - microphone may be silent or too quiet", rms);
         }
 
-        //afe_handle->feed(afe_data, buffer);
+        afe_handle->feed(afe_data, buffer);
         // FETCH IMMEDIATELY TO DRAIN RINGBUF
         afe_fetch_result_t *res = afe_handle->fetch(afe_data);
         if (res)
