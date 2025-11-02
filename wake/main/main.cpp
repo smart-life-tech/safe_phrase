@@ -197,7 +197,7 @@ void detect_Task(void *arg)
         int cmd_id = mn_iface->detect(mn_data, res->data);
         if (cmd_id >= 0)
         {
-            const char *word = mn_iface->get_word(mn_data, cmd_id);
+            const char *word = mn_iface->get_word_by_id(mn_data, cmd_id);  // CORRECT API
             for (int i = 0; i < NUM_GREETINGS; i++)
             {
                 if (strcasestr(word, greetings[i]))
