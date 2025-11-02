@@ -137,7 +137,15 @@ void feed_Task(void *arg)
             ESP_LOGW(TAG, "Low RMS (%.2f) - microphone may be silent or too quiet", rms);
         }
 
-        afe_handle->feed(afe_data, buffer);
+        //afe_handle->feed(afe_data, buffer);
+        // FETCH IMMEDIATELY TO DRAIN RINGBUF
+        afe_fetch_result_t *res = afe_handle->fetch(afe_data);
+        if (res)
+        {
+            // Optional: free res->data if not used
+            if (res->data)
+                free(res->data);
+        }
     }
 
     heap_caps_free(buffer);
@@ -149,7 +157,7 @@ void detect_Task(void *arg)
 {
     esp_afe_sr_data_t *afe_data = (esp_afe_sr_data_t *)arg;
     int afe_chunksize = afe_handle->get_fetch_chunksize(afe_data);
-    //esp_afe_sr_data_t *afe_data = (esp_afe_sr_data_t *)arg;
+    // esp_afe_sr_data_t *afe_data = (esp_afe_sr_data_t *)arg;
 
     models = esp_srmodel_init("model");
     char *mn_name = esp_srmodel_filter(models, ESP_MN_PREFIX, ESP_MN_ENGLISH);
