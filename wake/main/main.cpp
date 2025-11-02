@@ -291,9 +291,8 @@ void run_speech_recognition(esp_afe_sr_data_t *afe_data)
     ESP_LOGI(TAG, "🎤 Starting speech recognition session...");
 
     // Load English MultiNet
-    esp_mn_iface_t *mn_iface = esp_mn_handle_from_name("mn7_en");
-    model_iface_data_t *mn_data = mn_iface->create("mn7_en");
-
+    const esp_mn_iface_t *mn_iface = &esp_mn_handle;
+    model_iface_data_t *mn_data = mn_iface->create(&MULTINET_MODEL_LITE_EN);
     for (int i = 0; i < 60; i++) // listen ~3–4 s
     {
         afe_fetch_result_t *cmd_res = afe_handle->fetch(afe_data);
@@ -303,7 +302,7 @@ void run_speech_recognition(esp_afe_sr_data_t *afe_data)
         int cmd_id = mn_iface->detect(mn_data, cmd_res->data);
         if (cmd_id >= 0)
         {
-            const char *cmd = mn_iface->get_word(mn_data, cmd_id);
+            const char *cmd = mn_iface->get_word_str(mn_data, cmd_id);
             ESP_LOGI(TAG, "🧠 Recognized: %s", cmd);
 
             // Match your 20 greetings
@@ -322,7 +321,7 @@ void run_speech_recognition(esp_afe_sr_data_t *afe_data)
         }
     }
 
-    mn_iface->clear(mn_data);
+    mn_iface->clean(mn_data);
     mn_iface->destroy(mn_data);
     ESP_LOGI(TAG, "✅ Speech recognition complete.");
 }
