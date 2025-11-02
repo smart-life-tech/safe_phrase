@@ -147,9 +147,9 @@ void feed_Task(void *arg)
 /* detect task: call afe fetch and react to wake events */
 void detect_Task(void *arg)
 {
-    esp_afe_sr_data_t *afe_data = arg;
-    int afe_chunksize = afe_handle->get_fetch_chunksize(afe_data);
     esp_afe_sr_data_t *afe_data = (esp_afe_sr_data_t *)arg;
+    int afe_chunksize = afe_handle->get_fetch_chunksize(afe_data);
+    //esp_afe_sr_data_t *afe_data = (esp_afe_sr_data_t *)arg;
 
     models = esp_srmodel_init("model");
     char *mn_name = esp_srmodel_filter(models, ESP_MN_PREFIX, ESP_MN_ENGLISH);
