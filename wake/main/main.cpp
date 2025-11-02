@@ -15,6 +15,8 @@
 #include "esp_heap_caps.h"
 #include "esp_afe_sr_models.h"
 
+#include "esp_mn_iface.h"
+#include "esp_mn_models.h"
 #define TAG "WAKE_DBG"
 #define s3
 #ifdef s3
@@ -351,7 +353,7 @@ void run_wake_and_command()
         if (res->wakeup_state == WAKENET_DETECTED)
         {
             ESP_LOGI(TAG, "🚀 Wake word detected — switching to MultiNet mode...");
-            afe_handle->enable_wakenet(afe_data, false);
+            afe_handle->disable_wakenet(afe_data);
             run_speech_recognition(afe_data);
             afe_handle->enable_wakenet(afe_data, true);
             ESP_LOGI(TAG, "🔁 Returned to WakeNet listening mode.");
