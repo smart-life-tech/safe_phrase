@@ -241,7 +241,7 @@ void detect_Task(void *arg)
 
         // FREE DATA ONLY HERE
         if (res->data) {
-            free(res->data);
+           // free(res->data);
         }
     }
 
