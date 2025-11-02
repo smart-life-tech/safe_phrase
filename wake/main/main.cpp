@@ -143,8 +143,8 @@ void feed_Task(void *arg)
         if (res)
         {
             // Optional: free res->data if not used
-            if (res->data)
-                free(res->data);
+            // if (res->data)
+            //     free(res->data);
         }
     }
 
