@@ -194,7 +194,7 @@ void detect_Task(void *arg)
         {
             ESP_LOGI(TAG, "*** WAKE WORD DETECTED ***");
             ESP_LOGI(TAG, "Model index: %d, Word index: %d", res->wakenet_model_index, res->wake_word_index);
-            afe_handle->disable_wakenet(afe_data);  // DISABLE WAKE NET
+            //afe_handle->disable_wakenet(afe_data);  // DISABLE WAKE NET
             wakeup_flag = 1;
         }
 
@@ -232,8 +232,8 @@ void detect_Task(void *arg)
             {
                 esp_mn_results_t *mn_result = multinet->get_results(model_data);
                 printf("timeout, string:%s\n", mn_result->string);
-                afe_handle->enable_wakenet(afe_data);
-                wakeup_flag = 0;
+                //afe_handle->enable_wakenet(afe_data);
+                //wakeup_flag = 0;
                 printf("\n-----------awaits to be waken up-----------\n");
                 continue;
             }
