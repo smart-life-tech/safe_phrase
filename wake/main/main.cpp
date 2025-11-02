@@ -14,9 +14,9 @@
 #include "esp_system.h"
 #include "esp_heap_caps.h"
 #include "esp_afe_sr_models.h"
+#include "esp_mn_iface.h"          // <-- ONLY ADDED THIS LINE
+#include "esp_mn_models.h"         // <-- ONLY ADDED THIS LINE
 
-#include "esp_mn_iface.h"
-#include "esp_mn_models.h"
 #define TAG "WAKE_DBG"
 #define s3
 #ifdef s3
@@ -162,13 +162,25 @@ void detect_Task(void *arg)
     int chunk = afe_handle->get_fetch_chunksize(afe_data);
     ESP_LOGI(TAG, "Detect task chunk=%d", chunk);
 
-    ESP_LOGI(TAG, "Listening for wake word...");
+    // 20 GREETINGS TO DETECT (parallel, no wake word)
+    const char *greetings[] = {
+        "hello","helloo","helo","hi","hii","hey","heyy",
+        "hallo","hullo","hallow","yo","oy","howdy",
+        "wassup","what","sup","morning","good morning",
+        "good afternoon","good evening"
+    };
+    #define NUM_GREETINGS 20
+
+    esp_mn_iface_t *mn_iface = esp_mn_handle_from_name("mn7_en");
+    model_iface_data_t *mn_data = mn_iface->create("mn7_en");
+
+    ESP_LOGI(TAG, "Listening for 20 greetings in parallel...");
+
     while (task_flag)
     {
         afe_fetch_result_t *res = afe_handle->fetch(afe_data);
         if (!res)
         {
-            ESP_LOGE(TAG, "AFE fetch returned NULL");
             vTaskDelay(pdMS_TO_TICKS(10));
             continue;
         }
@@ -186,9 +198,25 @@ void detect_Task(void *arg)
         {
             ESP_LOGI(TAG, "*** WAKE WORD DETECTED ***");
             ESP_LOGI(TAG, "Model index: %d, Word index: %d", res->wakenet_model_index, res->wake_word_index);
-            /* take any action here (e.g., flash LED, start ASR, etc.) */
+        }
+
+        // PARALLEL GREETING DETECTION (no wake word needed)
+        int cmd_id = mn_iface->detect(mn_data, res->data);
+        if (cmd_id >= 0)
+        {
+            const char *word = mn_iface->get_word(mn_data, cmd_id);
+            for (int i = 0; i < NUM_GREETINGS; i++)
+            {
+                if (strcasestr(word, greetings[i]))
+                {
+                    ESP_LOGI(TAG, "GREETING DETECTED: %s", greetings[i]);
+                    break;
+                }
+            }
         }
     }
+
+    mn_iface->destroy(mn_data);
     vTaskDelete(NULL);
 }
 
@@ -238,9 +266,6 @@ extern "C" void app_main()
     }
 
     const char *input_fmt = "M"; // single mic
-    /* optionally pick a specific model here: see models->model_name[] */
-    // const char *desired = "wn9_hilexin";
-    // if you want to force change, you may need to edit AFE config after creation - ensure model present
 
     afe_config_t *afe_config = afe_config_init(input_fmt, models, AFE_TYPE_SR, AFE_MODE_LOW_COST);
     if (!afe_config)
@@ -256,7 +281,6 @@ extern "C" void app_main()
         afe_config_free(afe_config);
         return;
     }
-    // esp_afe_sr_set_wakenet_sensitivity(afe_handle, 0.7f);
 
     esp_afe_sr_data_t *afe_data = afe_handle->create_from_config(afe_config);
     if (!afe_data)
@@ -265,15 +289,6 @@ extern "C" void app_main()
         afe_config_free(afe_config);
         return;
     }
-    // modify wakenet detection threshold
-    // Select model by index (0 = wn9_alexa)
-    // esp_afe_sr_set_wakenet(afe_handle, afe_data, 0);
-
-    // Lower sensitivity = easier detection (0.0 = hard, 1.0 = easy)
-    // esp_afe_sr_set_wakenet_sensitivity(afe_handle, 0.7f); // 0.7 = balanced
-    // afe_handle->set_wakenet_threshold(afe_data, 2, 0.6); // set model2's threshold to 0.6
-    // afe_handle->reset_wakenet_threshold(afe_data, 1);    // reset model1's threshold to default
-    // afe_handle->reset_wakenet_threshold(afe_data, 2);    // reset model2's threshold to default
     afe_config_free(afe_config);
 
     task_flag = 1;
@@ -282,90 +297,4 @@ extern "C" void app_main()
     xTaskCreatePinnedToCore(detect_Task, "detect", 4096, (void *)afe_data, 6, NULL, 1);
 
     /* app_main returns; main_task will continue */
-}
-/************************************************************
- *  🔊  ADD-ON: MultiNet Speech Recognition for 20 greetings
- ************************************************************/
-void run_speech_recognition(esp_afe_sr_data_t *afe_data)
-{
-    ESP_LOGI(TAG, "🎤 Starting speech recognition session...");
-
-    // Load English MultiNet
-    const esp_mn_iface_t *mn_iface = &esp_mn_handle;
-    model_iface_data_t *mn_data = mn_iface->create(&MULTINET_MODEL_NAME);
-    for (int i = 0; i < 60; i++) // listen ~3–4 s
-    {
-        afe_fetch_result_t *cmd_res = afe_handle->fetch(afe_data);
-        if (!cmd_res)
-            continue;
-
-        int cmd_id = mn_iface->detect(mn_data, cmd_res->data);
-        if (cmd_id >= 0)
-        {
-            const char *cmd = mn_iface->get_word_str(mn_data, cmd_id);
-            ESP_LOGI(TAG, "🧠 Recognized: %s", cmd);
-
-            // Match your 20 greetings
-            if (strcasestr(cmd, "hello") || strcasestr(cmd, "helloo") || strcasestr(cmd, "helo") ||
-                strcasestr(cmd, "hi") || strcasestr(cmd, "hii") || strcasestr(cmd, "hey") ||
-                strcasestr(cmd, "heyy") || strcasestr(cmd, "hallo") || strcasestr(cmd, "hullo") ||
-                strcasestr(cmd, "hallow") || strcasestr(cmd, "yo") || strcasestr(cmd, "oy") ||
-                strcasestr(cmd, "howdy") || strcasestr(cmd, "wassup") || strcasestr(cmd, "what") ||
-                strcasestr(cmd, "sup") || strcasestr(cmd, "morning") ||
-                strcasestr(cmd, "good morning") || strcasestr(cmd, "good afternoon") ||
-                strcasestr(cmd, "good evening"))
-            {
-                ESP_LOGI(TAG, "👋 Greeting detected!");
-            }
-            break;
-        }
-    }
-
-    mn_iface->clean(mn_data);
-    mn_iface->destroy(mn_data);
-    ESP_LOGI(TAG, "✅ Speech recognition complete.");
-}
-
-/************************************************************
- *  🔁 Hook into your existing detect_task automatically
- ************************************************************/
-void run_wake_and_command()
-{
-    // Wait until AFE handle is ready (from app_main)
-    while (afe_handle == NULL)
-        vTaskDelay(pdMS_TO_TICKS(500));
-
-    esp_afe_sr_data_t *afe_data = afe_handle->create_from_config(NULL);
-    if (!afe_data)
-    {
-        ESP_LOGE(TAG, "❌ Failed to create AFE data for add-on");
-        return;
-    }
-
-    ESP_LOGI(TAG, "💤 Waiting for wake word before running MultiNet...");
-    while (1)
-    {
-        afe_fetch_result_t *res = afe_handle->fetch(afe_data);
-        if (!res)
-            continue;
-
-        if (res->wakeup_state == WAKENET_DETECTED)
-        {
-            ESP_LOGI(TAG, "🚀 Wake word detected — switching to MultiNet mode...");
-            afe_handle->disable_wakenet(afe_data);
-            run_speech_recognition(afe_data);
-            afe_handle->enable_wakenet(afe_data);
-            ESP_LOGI(TAG, "🔁 Returned to WakeNet listening mode.");
-        }
-    }
-}
-
-/************************************************************
- *  📢 Launch as background task
- ************************************************************/
-__attribute__((constructor)) static void start_wakeword_and_speech_task()
-{
-    // Run concurrently with your existing app_main()
-    xTaskCreatePinnedToCore([](void *)
-                            { run_wake_and_command(); }, "wake_mn_task", 8192, NULL, 5, NULL, 1);
 }
