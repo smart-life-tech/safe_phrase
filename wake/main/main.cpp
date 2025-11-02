@@ -292,7 +292,7 @@ void run_speech_recognition(esp_afe_sr_data_t *afe_data)
 
     // Load English MultiNet
     const esp_mn_iface_t *mn_iface = &esp_mn_handle;
-    model_iface_data_t *mn_data = mn_iface->create(&MULTINET_MODEL_LITE_EN);
+    model_iface_data_t *mn_data = mn_iface->create(&MULTINET_MODEL_NAME);
     for (int i = 0; i < 60; i++) // listen ~3–4 s
     {
         afe_fetch_result_t *cmd_res = afe_handle->fetch(afe_data);
@@ -354,7 +354,7 @@ void run_wake_and_command()
             ESP_LOGI(TAG, "🚀 Wake word detected — switching to MultiNet mode...");
             afe_handle->disable_wakenet(afe_data);
             run_speech_recognition(afe_data);
-            afe_handle->enable_wakenet(afe_data, true);
+            afe_handle->enable_wakenet(afe_data);
             ESP_LOGI(TAG, "🔁 Returned to WakeNet listening mode.");
         }
     }
