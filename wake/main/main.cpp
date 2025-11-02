@@ -24,7 +24,7 @@
 #define I2S_WS_IO (gpio_num_t)5
 #define I2S_SD_IO (gpio_num_t)6
 #endif
-
+int wakeup_flag = 0;
 static i2s_chan_handle_t rx_handle;
 static esp_afe_sr_iface_t *afe_handle = NULL;
 static volatile int task_flag = 0;
@@ -194,17 +194,45 @@ void detect_Task(void *arg)
             ESP_LOGI(TAG, "Model index: %d, Word index: %d", res->wakenet_model_index, res->wake_word_index);
         }
 
-        int cmd_id = mn_iface->detect(mn_data, res->data);
-        if (cmd_id >= 0)
+        if (res->raw_data_channels == 1 && res->wakeup_state == WAKENET_DETECTED)
         {
-            const char *word = mn_iface->get_word_by_id(mn_data, cmd_id);  // CORRECT API
-            for (int i = 0; i < NUM_GREETINGS; i++)
+            wakeup_flag = 1;
+        }
+        else if (res->raw_data_channels > 1 && res->wakeup_state == WAKENET_CHANNEL_VERIFIED)
+        {
+            // For a multi-channel AFE, it is necessary to wait for the channel to be verified.
+            printf("AFE_FETCH_CHANNEL_VERIFIED, channel index: %d\n", res->trigger_channel_id);
+            wakeup_flag = 1;
+        }
+
+        if (wakeup_flag == 1)
+        {
+            esp_mn_state_t mn_state = multinet->detect(model_data, res->data);
+
+            if (mn_state == ESP_MN_STATE_DETECTING)
             {
-                if (strcasestr(word, greetings[i]))
+                continue;
+            }
+
+            if (mn_state == ESP_MN_STATE_DETECTED)
+            {
+                esp_mn_results_t *mn_result = multinet->get_results(model_data);
+                for (int i = 0; i < mn_result->num; i++)
                 {
-                    ESP_LOGI(TAG, "GREETING DETECTED: %s", greetings[i]);
-                    break;
+                    printf("TOP %d, command_id: %d, phrase_id: %d, string: %s, prob: %f\n",
+                           i + 1, mn_result->command_id[i], mn_result->phrase_id[i], mn_result->string, mn_result->prob[i]);
                 }
+                printf("-----------listening-----------\n");
+            }
+
+            if (mn_state == ESP_MN_STATE_TIMEOUT)
+            {
+                esp_mn_results_t *mn_result = multinet->get_results(model_data);
+                printf("timeout, string:%s\n", mn_result->string);
+                afe_handle->enable_wakenet(afe_data);
+                wakeup_flag = 0;
+                printf("\n-----------awaits to be waken up-----------\n");
+                continue;
             }
         }
     }
