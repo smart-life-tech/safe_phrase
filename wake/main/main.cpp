@@ -126,7 +126,7 @@ void feed_Task(void *arg)
         static int print_count = 0;
         if ((print_count++ % 50) == 0)
         {
-            ESP_LOGI(TAG, "I2S read %d bytes (%d samples), RMS=%.2f", (int)bytes1, (int)got_samples, rms);
+            ESP_LOGI(TAG, "I2S read %d bytes (%d samples), RMS=%.2f", (int)bytes_read, (int)got_samples, rms);
 
             ESP_LOGI(TAG, "samples[0..7]: %d,%d,%d,%d,%d,%d,%d,%d",
                      buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7]);
@@ -318,9 +318,9 @@ extern "C" void app_main()
     }
 
     // ENABLE WAKE WORDS
-    esp_afe_sr_set_wakenet_model(afe_handle, afe_data, 0);  // Alexa
-    esp_afe_sr_set_wakenet_model(afe_handle, afe_data, 2);  // Hi ESP
-    esp_afe_sr_set_wakenet_sensitivity(afe_handle, 0.5f);
+    // esp_afe_sr_set_wakenet_model(afe_handle, afe_data, 0);  // Alexa
+    // esp_afe_sr_set_wakenet_model(afe_handle, afe_data, 2);  // Hi ESP
+    // esp_afe_sr_set_wakenet_sensitivity(afe_handle, 0.5f);
 
     afe_config_free(afe_config);
 
