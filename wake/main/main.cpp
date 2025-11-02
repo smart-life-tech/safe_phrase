@@ -126,7 +126,7 @@ void feed_Task(void *arg)
         static int print_count = 0;
         if ((print_count++ % 50) == 0)
         {
-            ESP_LOGI(TAG, "I2S read %d bytes (%d samples), RMS=%.2f", (int)bytes_read, (int)got_samples, rms);
+            ESP_LOGI(TAG, "I2S read %d bytes (%d samples), RMS=%.2f", (int)bytes1, (int)got_samples, rms);
 
             ESP_LOGI(TAG, "samples[0..7]: %d,%d,%d,%d,%d,%d,%d,%d",
                      buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7]);
@@ -138,14 +138,7 @@ void feed_Task(void *arg)
         }
 
         afe_handle->feed(afe_data, buffer);
-        // FETCH IMMEDIATELY TO DRAIN RINGBUF
-        afe_fetch_result_t *res = afe_handle->fetch(afe_data);
-        if (res)
-        {
-            // Optional: free res->data if not used
-            // if (res->data)
-            //     free(res->data);
-        }
+        // FETCH REMOVED — ONLY FEED HERE
     }
 
     heap_caps_free(buffer);
@@ -157,7 +150,6 @@ void detect_Task(void *arg)
 {
     esp_afe_sr_data_t *afe_data = (esp_afe_sr_data_t *)arg;
     int afe_chunksize = afe_handle->get_fetch_chunksize(afe_data);
-    // esp_afe_sr_data_t *afe_data = (esp_afe_sr_data_t *)arg;
 
     models = esp_srmodel_init("model");
     char *mn_name = esp_srmodel_filter(models, ESP_MN_PREFIX, ESP_MN_ENGLISH);
@@ -165,10 +157,10 @@ void detect_Task(void *arg)
     esp_mn_iface_t *multinet = esp_mn_handle_from_name(mn_name);
     model_iface_data_t *model_data = multinet->create(mn_name, 6000);
     int mu_chunksize = multinet->get_samp_chunksize(model_data);
-    esp_mn_commands_update_from_sdkconfig(multinet, model_data); // Add speech commands from sdkconfig
+    esp_mn_commands_update_from_sdkconfig(multinet, model_data);
     assert(mu_chunksize == afe_chunksize);
-    // print active speech commands
     multinet->print_active_speech_commands(model_data);
+
     if (!afe_handle || !afe_data)
     {
         ESP_LOGE(TAG, "afe_handle or afe_data NULL in detect_Task!");
@@ -179,18 +171,6 @@ void detect_Task(void *arg)
     int chunk = afe_handle->get_fetch_chunksize(afe_data);
     ESP_LOGI(TAG, "Detect task chunk=%d", chunk);
 
-    // 20 GREETINGS TO DETECT (parallel, no wake word)
-    const char *greetings[] = {
-        "hello", "helloo", "helo", "hi", "hii", "hey", "heyy",
-        "hallo", "hullo", "hallow", "yo", "oy", "howdy",
-        "wassup", "what", "sup", "morning", "good morning",
-        "good afternoon", "good evening"};
-#define NUM_GREETINGS 20
-
-    char model_name[] = "mn7_en";
-    esp_mn_iface_t *mn_iface = esp_mn_handle_from_name(model_name);
-    model_iface_data_t *mn_data = mn_iface->create(model_name, 0);
-
     ESP_LOGI(TAG, "Listening for 20 greetings in parallel...");
 
     while (task_flag)
@@ -198,7 +178,7 @@ void detect_Task(void *arg)
         afe_fetch_result_t *res = afe_handle->fetch(afe_data);
         if (!res)
         {
-            vTaskDelay(pdMS_TO_TICKS(10));
+            vTaskDelay(pdMS_TO_TICKS(5));
             continue;
         }
         if (res->ret_value == ESP_FAIL)
@@ -214,6 +194,8 @@ void detect_Task(void *arg)
         {
             ESP_LOGI(TAG, "*** WAKE WORD DETECTED ***");
             ESP_LOGI(TAG, "Model index: %d, Word index: %d", res->wakenet_model_index, res->wake_word_index);
+            afe_handle->disable_wakenet(afe_data);  // DISABLE WAKE NET
+            wakeup_flag = 1;
         }
 
         if (res->raw_data_channels == 1 && res->wakeup_state == WAKENET_DETECTED)
@@ -222,7 +204,6 @@ void detect_Task(void *arg)
         }
         else if (res->raw_data_channels > 1 && res->wakeup_state == WAKENET_CHANNEL_VERIFIED)
         {
-            // For a multi-channel AFE, it is necessary to wait for the channel to be verified.
             printf("AFE_FETCH_CHANNEL_VERIFIED, channel index: %d\n", res->trigger_channel_id);
             wakeup_flag = 1;
         }
@@ -257,9 +238,13 @@ void detect_Task(void *arg)
                 continue;
             }
         }
+
+        // FREE DATA ONLY HERE
+        if (res->data) {
+            free(res->data);
+        }
     }
 
-    mn_iface->destroy(mn_data);
     multinet->destroy(model_data);
     vTaskDelete(NULL);
 }
@@ -331,9 +316,15 @@ extern "C" void app_main()
         afe_config_free(afe_config);
         return;
     }
+
+    // ENABLE WAKE WORDS
+    esp_afe_sr_set_wakenet_model(afe_handle, afe_data, 0);  // Alexa
+    esp_afe_sr_set_wakenet_model(afe_handle, afe_data, 2);  // Hi ESP
+    esp_afe_sr_set_wakenet_sensitivity(afe_handle, 0.5f);
+
     afe_config_free(afe_config);
 
     task_flag = 1;
-    xTaskCreatePinnedToCore(feed_Task, "feed", 4096, (void *)afe_data, 6, NULL, 0);
-    xTaskCreatePinnedToCore(detect_Task, "detect", 4096, (void *)afe_data, 6, NULL, 1);
+    xTaskCreatePinnedToCore(feed_Task, "feed", 4096, (void *)afe_data, 7, NULL, 0);
+    xTaskCreatePinnedToCore(detect_Task, "detect", 8192, (void *)afe_data, 6, NULL, 1);
 }
