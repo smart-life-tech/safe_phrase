@@ -16,6 +16,7 @@
 #include "esp_afe_sr_models.h"
 #include "esp_mn_iface.h"
 #include "esp_mn_models.h"
+#include "esp_process_sdkconfig.h"
 
 #define TAG "WAKE_DBG"
 #define s3
@@ -28,7 +29,7 @@ int wakeup_flag = 0;
 static i2s_chan_handle_t rx_handle;
 static esp_afe_sr_iface_t *afe_handle = NULL;
 static volatile int task_flag = 0;
-
+srmodel_list_t *models = NULL;
 /* init I2S (same as your code, but keep DMA smaller while debugging if you want) */
 void i2s_init()
 {
@@ -146,7 +147,11 @@ void feed_Task(void *arg)
 /* detect task: call afe fetch and react to wake events */
 void detect_Task(void *arg)
 {
+    esp_afe_sr_data_t *afe_data = arg;
+    int afe_chunksize = afe_handle->get_fetch_chunksize(afe_data);
     esp_afe_sr_data_t *afe_data = (esp_afe_sr_data_t *)arg;
+
+    models = esp_srmodel_init("model");
     char *mn_name = esp_srmodel_filter(models, ESP_MN_PREFIX, ESP_MN_ENGLISH);
     printf("multinet:%s\n", mn_name);
     esp_mn_iface_t *multinet = esp_mn_handle_from_name(mn_name);
@@ -247,6 +252,7 @@ void detect_Task(void *arg)
     }
 
     mn_iface->destroy(mn_data);
+    multinet->destroy(model_data);
     vTaskDelete(NULL);
 }
 
