@@ -363,8 +363,7 @@ extern "C" void app_main()
             .timer_sel = LEDC_TIMER_0,
             .duty = 255, // OFF
             .hpoint = 0,
-            .flags = {.output_invert = 0},
-            .deconfigure = false};
+            .flags = {.output_invert = 0}};
         ledc_channel_config(&ledc_ch);
     }
     task_flag = 1;
