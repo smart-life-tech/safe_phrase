@@ -232,9 +232,10 @@ void detect_Task(void *arg)
                     if (mn_result->prob[i] > 0.5)
                     {
                         int led = mn_result->command_id[i] % 3;
-                        ledc_set_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)led, 0); // 0 = ON
+                        ledc_set_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)led, 255); // 0 = ON
                         ledc_update_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)led);
                         ESP_LOGI(TAG, "LED %d ON → %s (%.2f)", led, mn_result->string, mn_result->prob[i]);
+                        printf("LED %d ON → %s (%.2f)", led, mn_result->string, mn_result->prob[i]);
                     }
                 }
                 printf("-----------listening-----------\n");
@@ -248,7 +249,7 @@ void detect_Task(void *arg)
                 // wakeup_flag = 0;
                 for (int i = 0; i < 3; i++)
                 {
-                    ledc_set_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)i, 255); // OFF
+                    ledc_set_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)i, 0); // OFF
                     ledc_update_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)i);
                 }
 
