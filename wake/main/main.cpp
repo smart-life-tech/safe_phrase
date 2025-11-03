@@ -231,9 +231,10 @@ void detect_Task(void *arg)
                     // LED CONTROL: PROB > 0.5 → TURN ON CORRESPONDING LED
                     if (mn_result->prob[i] > 0.5)
                     {
-                        int led_index = mn_result->command_id[i] % 3; // Map command to R, G, B
-                        ledcWrite(ledPins[led_index], 0);             // 0 = FULL ON (common anode)
-                        ESP_LOGI(TAG, "LED %d ON (command: %s, prob: %.2f)", led_index, mn_result->string, mn_result->prob[i]);
+                        int led = mn_result->command_id[i] % 3;
+                        ledc_set_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)led, 0); // 0 = ON
+                        ledc_update_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)led);
+                        ESP_LOGI(TAG, "LED %d ON → %s (%.2f)", led, mn_result->string, mn_result->prob[i]);
                     }
                 }
                 printf("-----------listening-----------\n");
@@ -245,6 +246,11 @@ void detect_Task(void *arg)
                 printf("timeout, string:%s\n", mn_result->string);
                 // afe_handle->enable_wakenet(afe_data);
                 // wakeup_flag = 0;
+                for (int i = 0; i < 3; i++)
+                {
+                    ledc_set_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)i, 255); // OFF
+                    ledc_update_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)i);
+                }
 
                 printf("\n-----------awaits to be waken up-----------\n");
                 continue;
@@ -336,9 +342,26 @@ extern "C" void app_main()
     // esp_afe_sr_set_wakenet_sensitivity(afe_handle, 0.5f);
 
     afe_config_free(afe_config);
+    // ADD AFTER: esp_afe_sr_data_t *afe_data = ...
+    ledc_timer_config_t ledc_timer = {
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .duty_resolution = LEDC_TIMER_8_BIT,
+        .timer_num = LEDC_TIMER_0,
+        .freq_hz = 1000,
+        .clk_cfg = LEDC_AUTO_CLK};
+    ledc_timer_config(&ledc_timer);
+
     for (int i = 0; i < 3; i++)
     {
-        ledcAttach(ledPins[i], 1000, 8); // 1KHz, 8-bit resolution
+        ledc_channel_config_t ledc_ch = {
+            .gpio_num = ledPins[i],
+            .speed_mode = LEDC_LOW_SPEED_MODE,
+            .channel = (ledc_channel_t)i,
+            .timer_sel = LEDC_TIMER_0,
+            .duty = 255, // OFF
+            .hpoint = 0,
+            .flags = {.output_invert = 0}};
+        ledc_channel_config(&ledc_ch);
     }
     task_flag = 1;
     xTaskCreatePinnedToCore(feed_Task, "feed", 4096, (void *)afe_data, 7, NULL, 0);
