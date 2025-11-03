@@ -56,3 +56,6 @@ To list available microphones, uncomment the `list_microphones()` call in `main(
 - For offline mode, ensure the Vosk model is downloaded and the path is correct.
 - Adjust microphone settings if using a USB mic.
 - The script uses fuzzy matching for phrase detection.
+- . $HOME/esp/esp-idf/export.sh
+- cd ~/safe_phrase/wake/components/esp-adf/components/esp-sr/model/multinet_model/fst
+- sudo nano commands_en.txt

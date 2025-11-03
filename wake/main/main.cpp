@@ -30,6 +30,8 @@ static i2s_chan_handle_t rx_handle;
 static esp_afe_sr_iface_t *afe_handle = NULL;
 static volatile int task_flag = 0;
 srmodel_list_t *models = NULL;
+const int ledPins[] = {38, 39, 40};
+const int chns[] = {0, 1, 2};
 /* init I2S (same as your code, but keep DMA smaller while debugging if you want) */
 void i2s_init()
 {
@@ -194,7 +196,7 @@ void detect_Task(void *arg)
         {
             ESP_LOGI(TAG, "*** WAKE WORD DETECTED ***");
             ESP_LOGI(TAG, "Model index: %d, Word index: %d", res->wakenet_model_index, res->wake_word_index);
-            //afe_handle->disable_wakenet(afe_data);  // DISABLE WAKE NET
+            // afe_handle->disable_wakenet(afe_data);  // DISABLE WAKE NET
             wakeup_flag = 1;
         }
 
@@ -232,16 +234,24 @@ void detect_Task(void *arg)
             {
                 esp_mn_results_t *mn_result = multinet->get_results(model_data);
                 printf("timeout, string:%s\n", mn_result->string);
-                //afe_handle->enable_wakenet(afe_data);
-                //wakeup_flag = 0;
+                // afe_handle->enable_wakenet(afe_data);
+                // wakeup_flag = 0;
+                // IN detect_Task → DETECTED BLOCK
+                if (mn_result->prob[i] > 0.5)
+                {
+                    int led = mn_result->command_id[i] % 3;
+                    ledcWrite(ledPins[led], 0); // ON
+                    ESP_LOGI(TAG, "LED %d ON → %s (%.2f)", led, mn_result->string, mn_result->prob[i]);
+                }
                 printf("\n-----------awaits to be waken up-----------\n");
                 continue;
             }
         }
 
         // FREE DATA ONLY HERE
-        if (res->data) {
-           // free(res->data);
+        if (res->data)
+        {
+            // free(res->data);
         }
     }
 
@@ -260,7 +270,10 @@ extern "C" void app_main()
     ESP_LOGI(TAG, "Free PSRAM: %u bytes", (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
     heap_caps_print_heap_info(MALLOC_CAP_SPIRAM);
-
+    for (int i = 0; i < 3; i++)
+    {
+        ledcAttach(ledPins[i], 1000, 8);
+    }
     size_t buffer_size = 1 * 1024 * 1024;
     void *psram_buffer = heap_caps_malloc(buffer_size, MALLOC_CAP_SPIRAM);
     if (psram_buffer)
