@@ -17,6 +17,7 @@
 #include "esp_mn_iface.h"
 #include "esp_mn_models.h"
 #include "esp_process_sdkconfig.h"
+#include "driver/ledc.h"
 
 #define TAG "WAKE_DBG"
 #define s3
@@ -226,6 +227,14 @@ void detect_Task(void *arg)
                 {
                     printf("TOP %d, command_id: %d, phrase_id: %d, string: %s, prob: %f\n",
                            i + 1, mn_result->command_id[i], mn_result->phrase_id[i], mn_result->string, mn_result->prob[i]);
+
+                    // LED CONTROL: PROB > 0.5 → TURN ON CORRESPONDING LED
+                    if (mn_result->prob[i] > 0.5)
+                    {
+                        int led_index = mn_result->command_id[i] % 3; // Map command to R, G, B
+                        ledcWrite(ledPins[led_index], 0);             // 0 = FULL ON (common anode)
+                        ESP_LOGI(TAG, "LED %d ON (command: %s, prob: %.2f)", led_index, mn_result->string, mn_result->prob[i]);
+                    }
                 }
                 printf("-----------listening-----------\n");
             }
@@ -236,13 +245,7 @@ void detect_Task(void *arg)
                 printf("timeout, string:%s\n", mn_result->string);
                 // afe_handle->enable_wakenet(afe_data);
                 // wakeup_flag = 0;
-                // IN detect_Task → DETECTED BLOCK
-                if (mn_result->prob[i] > 0.5)
-                {
-                    int led = mn_result->command_id[i] % 3;
-                    ledcWrite(ledPins[led], 0); // ON
-                    ESP_LOGI(TAG, "LED %d ON → %s (%.2f)", led, mn_result->string, mn_result->prob[i]);
-                }
+
                 printf("\n-----------awaits to be waken up-----------\n");
                 continue;
             }
@@ -270,10 +273,7 @@ extern "C" void app_main()
     ESP_LOGI(TAG, "Free PSRAM: %u bytes", (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
     heap_caps_print_heap_info(MALLOC_CAP_SPIRAM);
-    for (int i = 0; i < 3; i++)
-    {
-        ledcAttach(ledPins[i], 1000, 8);
-    }
+
     size_t buffer_size = 1 * 1024 * 1024;
     void *psram_buffer = heap_caps_malloc(buffer_size, MALLOC_CAP_SPIRAM);
     if (psram_buffer)
@@ -336,7 +336,10 @@ extern "C" void app_main()
     // esp_afe_sr_set_wakenet_sensitivity(afe_handle, 0.5f);
 
     afe_config_free(afe_config);
-
+    for (int i = 0; i < 3; i++)
+    {
+        ledcAttach(ledPins[i], 1000, 8); // 1KHz, 8-bit resolution
+    }
     task_flag = 1;
     xTaskCreatePinnedToCore(feed_Task, "feed", 4096, (void *)afe_data, 7, NULL, 0);
     xTaskCreatePinnedToCore(detect_Task, "detect", 8192, (void *)afe_data, 6, NULL, 1);
