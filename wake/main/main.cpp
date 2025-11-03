@@ -350,8 +350,7 @@ extern "C" void app_main()
         .duty_resolution = LEDC_TIMER_8_BIT,
         .timer_num = LEDC_TIMER_0,
         .freq_hz = 1000,
-        .clk_cfg = LEDC_AUTO_CLK,
-        .deconfigure = false};
+        .clk_cfg = LEDC_AUTO_CLK};
     ledc_timer_config(&ledc_timer);
 
     for (int i = 0; i < 3; i++)
