@@ -358,7 +358,7 @@ extern "C" void app_main()
     {
         ledc_channel_config_t ledc_ch = {
             .gpio_num = ledPins[i],
-            .speed_mode = LEDC_HIGH_SPEED_MODE,
+            .speed_mode = LEDC_LOW_SPEED_MODE,
             .channel = (ledc_channel_t)i,
             .intr_type = LEDC_INTR_DISABLE,
             .timer_sel = LEDC_TIMER_0,
