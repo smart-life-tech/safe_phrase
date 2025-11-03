@@ -343,28 +343,33 @@ extern "C" void app_main()
     // esp_afe_sr_set_wakenet_sensitivity(afe_handle, 0.5f);
 
     afe_config_free(afe_config);
-    // ADD AFTER: esp_afe_sr_data_t *afe_data = ...
+
+    // ESP32-S3: USE HIGH-SPEED MODE ONLY
     ledc_timer_config_t ledc_timer = {
-        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .speed_mode = LEDC_HIGH_SPEED_MODE,
         .duty_resolution = LEDC_TIMER_8_BIT,
         .timer_num = LEDC_TIMER_0,
         .freq_hz = 1000,
-        .clk_cfg = LEDC_AUTO_CLK};
+        .clk_cfg = LEDC_AUTO_CLK,
+        .deconfigure = false};
     ledc_timer_config(&ledc_timer);
 
     for (int i = 0; i < 3; i++)
     {
         ledc_channel_config_t ledc_ch = {
             .gpio_num = ledPins[i],
-            .speed_mode = LEDC_LOW_SPEED_MODE,
+            .speed_mode = LEDC_HIGH_SPEED_MODE,
             .channel = (ledc_channel_t)i,
+            .intr_type = LEDC_INTR_DISABLE,
             .timer_sel = LEDC_TIMER_0,
             .duty = 255, // OFF
             .hpoint = 0,
-            .flags = {.output_invert = 0}};
+            .flags = {.output_invert = 0},
+            .deconfigure = false};
         ledc_channel_config(&ledc_ch);
     }
     task_flag = 1;
+    printf("LED initialized done ");
     xTaskCreatePinnedToCore(feed_Task, "feed", 4096, (void *)afe_data, 7, NULL, 0);
     xTaskCreatePinnedToCore(detect_Task, "detect", 8192, (void *)afe_data, 6, NULL, 1);
 }
