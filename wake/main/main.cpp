@@ -346,7 +346,7 @@ extern "C" void app_main()
 
     // ESP32-S3: USE HIGH-SPEED MODE ONLY
     ledc_timer_config_t ledc_timer = {
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
         .duty_resolution = LEDC_TIMER_8_BIT,
         .timer_num = LEDC_TIMER_0,
         .freq_hz = 1000,
