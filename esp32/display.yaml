@@ -1,0 +1,4386 @@
+substitutions:
+  plug1_ip: "192.168.68.76"
+  plug2_ip: "192.168.68.200"
+  plug3_ip: "192.168.68.201"
+  plug4_ip: "192.168.68.202"
+  plug5_ip: "192.168.68.203"
+  plug6_ip: "192.168.68.204"
+  plug7_ip: "192.168.68.205"
+  plug8_ip: "192.168.68.206"
+
+esphome:
+  name: waveshare-esp32-s3-7in
+  friendly_name: Waveshare ESP32-S3 7in
+  min_version: "2025.4.2"
+  platformio_options:
+    build_flags: "-DBOARD_HAS_PSRAM"
+    board_build.arduino.memory_type: qio_opi
+    board_build.flash_mode: dio
+    board_upload.maximum_ram_size: 524288
+
+psram:
+  mode: octal
+  speed: 120MHz
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: ESP32S3
+  flash_size: 8MB
+  cpu_frequency: 240MHz
+  framework:
+    type: esp-idf
+    advanced:
+      enable_idf_experimental_features: true
+    sdkconfig_options:
+      COMPILER_OPTIMIZATION_SIZE: y
+      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
+      CONFIG_ESPTOOLPY_FLASHSIZE_8MB: "y"
+      CONFIG_FREERTOS_HZ: "1000"
+      CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240: y
+      CONFIG_ESPTOOLPY_FLASHMODE_QIO: y
+      CONFIG_ESPTOOLPY_FLASHFREQ_120M: y
+      CONFIG_SPIRAM_MODE_OCT: y
+      CONFIG_IDF_EXPERIMENTAL_FEATURES: y
+      CONFIG_SPIRAM_SPEED_120M: y
+      CONFIG_SPIRAM_FETCH_INSTRUCTIONS: y
+      CONFIG_SPIRAM_RODATA: y
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: y
+      CONFIG_COMPILER_OPTIMIZATION_PERF: y
+
+logger:
+
+wifi:
+  ssid: "JEREMY"
+  password: "605506Jdb"
+  power_save_mode: NONE
+  reboot_timeout: 0s   # prevent auto reboot on Wi-Fi idle
+
+  ap:
+    ssid: "WaveshareS3-7in Fallback"
+    password: "12345678"
+
+captive_portal:
+
+api:
+  reboot_timeout: 0s   # prevent auto reboot on API idle
+  encryption:
+    key: "+6lkh+FkWq3HVFh6+NukfmN188wGMQap7sw2RK1p9Gg="
+
+ota:
+  - platform: esphome
+    password: "48170f28ed94e6fe392d67906b01ff74"
+
+mqtt:
+  broker: 192.168.68.70
+  port: 1883
+  username: ""
+  password: ""
+  discovery: true
+  discovery_retain: false
+  log_topic: waveshare-esp32-s3-7in/debug
+  topic_prefix: waveshare-esp32-s3-7in
+  id: mqtt_client
+  reboot_timeout: 0s    # prevent MQTT from rebooting the device if broker is down
+
+http_request:
+  id: http_client
+  timeout: 2s
+
+i2c:
+  sda: GPIO08
+  scl: GPIO09
+  scan: true
+  id: bus_a
+
+ch422g:
+  - id: ch422g_hub
+
+output:
+  - platform: ledc
+    id: lcdbacklight_output
+    pin: GPIO16
+    frequency: 1000 Hz
+
+light:
+  - platform: monochromatic
+    id: lcdbacklight
+    name: LCD Backlight
+    output: lcdbacklight_output
+    icon: mdi:wall-sconce-flat-outline
+    disabled_by_default: true
+    restore_mode: ALWAYS_ON
+
+globals:
+  - id: last_activity
+    type: uint32_t
+    restore_value: no
+    initial_value: "0"
+
+  # 0=AUTO (5m), 1=ON
+  - id: bl_mode
+    type: int
+    restore_value: yes
+    initial_value: "0"
+
+  - id: bl_level
+    type: int
+    restore_value: yes
+    initial_value: "100"
+
+  - id: plug1_ui_state
+    type: bool
+    restore_value: no
+    initial_value: "false"
+  - id: plug2_ui_state
+    type: bool
+    restore_value: no
+    initial_value: "false"
+  - id: plug3_ui_state
+    type: bool
+    restore_value: no
+    initial_value: "false"
+  - id: plug4_ui_state
+    type: bool
+    restore_value: no
+    initial_value: "false"
+  - id: plug5_ui_state
+    type: bool
+    restore_value: no
+    initial_value: "false"
+  - id: plug6_ui_state
+    type: bool
+    restore_value: no
+    initial_value: "false"
+  - id: plug7_ui_state
+    type: bool
+    restore_value: no
+    initial_value: "false"
+  - id: plug8_ui_state
+    type: bool
+    restore_value: no
+    initial_value: "false"
+
+  # ================================
+switch:
+  # CH422G backlight power
+  - platform: gpio
+    id: lcd_backlight_sw
+    internal: true
+    pin:
+      ch422g: ch422g_hub
+      number: 2
+      mode:
+        output: true
+      inverted: false
+    restore_mode: ALWAYS_ON
+
+  # Schedule switches
+  - platform: template
+    id: plug1_schedule_enabled
+    name: "Plug 1 Schedule Enabled"
+    optimistic: true
+    entity_category: "config"
+  - platform: template
+    id: plug2_schedule_enabled
+    name: "Plug 2 Schedule Enabled"
+    optimistic: true
+    entity_category: "config"
+  - platform: template
+    id: plug3_schedule_enabled
+    name: "Plug 3 Schedule Enabled"
+    optimistic: true
+    entity_category: "config"
+  - platform: template
+    id: plug4_schedule_enabled
+    name: "Plug 4 Schedule Enabled"
+    optimistic: true
+    entity_category: "config"
+  - platform: template
+    id: plug5_schedule_enabled
+    name: "Plug 5 Schedule Enabled"
+    optimistic: true
+    entity_category: "config"
+  - platform: template
+    id: plug6_schedule_enabled
+    name: "Plug 6 Schedule Enabled"
+    optimistic: true
+    entity_category: "config"
+  - platform: template
+    id: plug7_schedule_enabled
+    name: "Plug 7 Schedule Enabled"
+    optimistic: true
+    entity_category: "config"
+  - platform: template
+    id: plug8_schedule_enabled
+    name: "Plug 8 Schedule Enabled"
+    optimistic: true
+    entity_category: "config"
+
+script:
+  - id: register_activity
+    then:
+      - lambda: |-
+          id(last_activity) = millis();
+          id(lcd_backlight_sw).turn_on();
+          if (id(bl_mode) == 0) {
+            auto call = id(lcdbacklight).turn_on();
+            float bri = id(bl_level) / 100.0f;
+            call.set_brightness(bri);
+            call.perform();
+          }
+
+  - id: bl_auto_off_check
+    then:
+      - lambda: |-
+          uint32_t now = millis();
+          if (id(last_activity) == 0) {
+            id(last_activity) = now;
+            return;
+          }
+          uint32_t timeout_ms = 5UL * 60UL * 1000UL;
+          if (id(bl_mode) == 0) {
+            if (now - id(last_activity) > timeout_ms) {
+              ESP_LOGI("backlight", "Auto-off: turning backlight OFF after 5 min inactivity");
+              auto call = id(lcdbacklight).turn_off();
+              call.perform();
+              id(lcd_backlight_sw).turn_off();
+              id(last_activity) = now;
+            }
+          }
+
+  # per-plug schedule helpers (turn_on/off + update_state)
+  - id: plug1_turn_on
+    then:
+      - logger.log: "Schedule: turning Plug 1 ON"
+      - http_request.post:
+          url: "http://${plug1_ip}/switch/kauf_plug/turn_on"
+      - delay: 500ms
+      - script.execute: plug1_update_state
+
+  - id: plug1_turn_off
+    then:
+      - logger.log: "Schedule: turning Plug 1 OFF"
+      - http_request.post:
+          url: "http://${plug1_ip}/switch/kauf_plug/turn_off"
+      - delay: 500ms
+      - script.execute: plug1_update_state
+
+  - id: plug2_turn_on
+    then:
+      - logger.log: "Schedule: turning Plug 2 ON"
+      - http_request.post:
+          url: "http://${plug2_ip}/switch/kauf_plug/turn_on"
+      - delay: 500ms
+      - script.execute: plug2_update_state
+
+  - id: plug2_turn_off
+    then:
+      - logger.log: "Schedule: turning Plug 2 OFF"
+      - http_request.post:
+          url: "http://${plug2_ip}/switch/kauf_plug/turn_off"
+      - delay: 500ms
+      - script.execute: plug2_update_state
+
+  - id: plug3_turn_on
+    then:
+      - logger.log: "Schedule: turning Plug 3 ON"
+      - http_request.post:
+          url: "http://${plug3_ip}/switch/kauf_plug/turn_on"
+      - delay: 500ms
+      - script.execute: plug3_update_state
+
+  - id: plug3_turn_off
+    then:
+      - logger.log: "Schedule: turning Plug 3 OFF"
+      - http_request.post:
+          url: "http://${plug3_ip}/switch/kauf_plug/turn_off"
+      - delay: 500ms
+      - script.execute: plug3_update_state
+
+  - id: plug4_turn_on
+    then:
+      - logger.log: "Schedule: turning Plug 4 ON"
+      - http_request.post:
+          url: "http://${plug4_ip}/switch/kauf_plug/turn_on"
+      - delay: 500ms
+      - script.execute: plug4_update_state
+
+  - id: plug4_turn_off
+    then:
+      - logger.log: "Schedule: turning Plug 4 OFF"
+      - http_request.post:
+          url: "http://${plug4_ip}/switch/kauf_plug/turn_off"
+      - delay: 500ms
+      - script.execute: plug4_update_state
+
+  - id: plug5_turn_on
+    then:
+      - logger.log: "Schedule: turning Plug 5 ON"
+      - http_request.post:
+          url: "http://${plug5_ip}/switch/kauf_plug/turn_on"
+      - delay: 500ms
+      - script.execute: plug5_update_state
+
+  - id: plug5_turn_off
+    then:
+      - logger.log: "Schedule: turning Plug 5 OFF"
+      - http_request.post:
+          url: "http://${plug5_ip}/switch/kauf_plug/turn_off"
+      - delay: 500ms
+      - script.execute: plug5_update_state
+
+  - id: plug6_turn_on
+    then:
+      - logger.log: "Schedule: turning Plug 6 ON"
+      - http_request.post:
+          url: "http://${plug6_ip}/switch/kauf_plug/turn_on"
+      - delay: 500ms
+      - script.execute: plug6_update_state
+
+  - id: plug6_turn_off
+    then:
+      - logger.log: "Schedule: turning Plug 6 OFF"
+      - http_request.post:
+          url: "http://${plug6_ip}/switch/kauf_plug/turn_off"
+      - delay: 500ms
+      - script.execute: plug6_update_state
+
+  - id: plug7_turn_on
+    then:
+      - logger.log: "Schedule: turning Plug 7 ON"
+      - http_request.post:
+          url: "http://${plug7_ip}/switch/kauf_plug/turn_on"
+      - delay: 500ms
+      - script.execute: plug7_update_state
+
+  - id: plug7_turn_off
+    then:
+      - logger.log: "Schedule: turning Plug 7 OFF"
+      - http_request.post:
+          url: "http://${plug7_ip}/switch/kauf_plug/turn_off"
+      - delay: 500ms
+      - script.execute: plug7_update_state
+
+  
+  # ==========================================
+  # Kauf PLF12 plug state helpers
+  - id: plug1_update_state
+    then:
+      - http_request.get:
+          url: "http://${plug1_ip}/switch/kauf_plug"
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  bool on = body.find("\"state\":\"ON\"") != std::string::npos;
+                  id(plug1_ui_state) = on;
+                  auto col = on ? lv_color_hex(0x00FF00) : lv_color_hex(0xFF0000);
+                  lv_obj_set_style_bg_color(id(btn_plug1), col, LV_PART_MAIN);
+          on_error:
+            then:
+              - lambda: |-
+                  id(plug1_ui_state) = false;
+                  lv_obj_set_style_bg_color(id(btn_plug1), lv_color_hex(0xFF0000), LV_PART_MAIN);
+
+  - id: plug2_update_state
+    then:
+      - http_request.get:
+          url: "http://${plug2_ip}/switch/kauf_plug"
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  bool on = body.find("\"state\":\"ON\"") != std::string::npos;
+                  id(plug2_ui_state) = on;
+                  auto col = on ? lv_color_hex(0x00FF00) : lv_color_hex(0xFF0000);
+                  lv_obj_set_style_bg_color(id(btn_plug2), col, LV_PART_MAIN);
+          on_error:
+            then:
+              - lambda: |-
+                  id(plug2_ui_state) = false;
+                  lv_obj_set_style_bg_color(id(btn_plug2), lv_color_hex(0xFF0000), LV_PART_MAIN);
+
+  - id: plug3_update_state
+    then:
+      - http_request.get:
+          url: "http://${plug3_ip}/switch/kauf_plug"
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  bool on = body.find("\"state\":\"ON\"") != std::string::npos;
+                  id(plug3_ui_state) = on;
+                  auto col = on ? lv_color_hex(0x00FF00) : lv_color_hex(0xFF0000);
+                  lv_obj_set_style_bg_color(id(btn_plug3), col, LV_PART_MAIN);
+          on_error:
+            then:
+              - lambda: |-
+                  id(plug3_ui_state) = false;
+                  lv_obj_set_style_bg_color(id(btn_plug3), lv_color_hex(0xFF0000), LV_PART_MAIN);
+
+  - id: plug4_update_state
+    then:
+      - http_request.get:
+          url: "http://${plug4_ip}/switch/kauf_plug"
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  bool on = body.find("\"state\":\"ON\"") != std::string::npos;
+                  id(plug4_ui_state) = on;
+                  auto col = on ? lv_color_hex(0x00FF00) : lv_color_hex(0xFF0000);
+                  lv_obj_set_style_bg_color(id(btn_plug4), col, LV_PART_MAIN);
+          on_error:
+            then:
+              - lambda: |-
+                  id(plug4_ui_state) = false;
+                  lv_obj_set_style_bg_color(id(btn_plug4), lv_color_hex(0xFF0000), LV_PART_MAIN);
+
+  - id: plug5_update_state
+    then:
+      - http_request.get:
+          url: "http://${plug5_ip}/switch/kauf_plug"
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  bool on = body.find("\"state\":\"ON\"") != std::string::npos;
+                  id(plug5_ui_state) = on;
+                  auto col = on ? lv_color_hex(0x00FF00) : lv_color_hex(0xFF0000);
+                  lv_obj_set_style_bg_color(id(btn_plug5), col, LV_PART_MAIN);
+          on_error:
+            then:
+              - lambda: |-
+                  id(plug5_ui_state) = false;
+                  lv_obj_set_style_bg_color(id(btn_plug5), lv_color_hex(0xFF0000), LV_PART_MAIN);
+
+  - id: plug6_update_state
+    then:
+      - http_request.get:
+          url: "http://${plug6_ip}/switch/kauf_plug"
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  bool on = body.find("\"state\":\"ON\"") != std::string::npos;
+                  id(plug6_ui_state) = on;
+                  auto col = on ? lv_color_hex(0x00FF00) : lv_color_hex(0xFF0000);
+                  lv_obj_set_style_bg_color(id(btn_plug6), col, LV_PART_MAIN);
+          on_error:
+            then:
+              - lambda: |-
+                  id(plug6_ui_state) = false;
+                  lv_obj_set_style_bg_color(id(btn_plug6), lv_color_hex(0xFF0000), LV_PART_MAIN);
+
+  - id: plug7_update_state
+    then:
+      - http_request.get:
+          url: "http://${plug7_ip}/switch/kauf_plug"
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  bool on = body.find("\"state\":\"ON\"") != std::string::npos;
+                  id(plug7_ui_state) = on;
+                  auto col = on ? lv_color_hex(0x00FF00) : lv_color_hex(0xFF0000);
+                  lv_obj_set_style_bg_color(id(btn_plug7), col, LV_PART_MAIN);
+          on_error:
+            then:
+              - lambda: |-
+                  id(plug7_ui_state) = false;
+                  lv_obj_set_style_bg_color(id(btn_plug7), lv_color_hex(0xFF0000), LV_PART_MAIN);
+
+  - id: toggle_plug8_device
+    then:
+      - logger.log: "Manual: toggling Plug 8"
+      - http_request.post:
+          url: "http://${plug8_ip}/switch/kauf_plug/toggle"
+      - delay: 500ms
+      - script.execute: plug8_update_state
+
+  - id: plug8_turn_on
+    then:
+      - logger.log: "Schedule: turning Plug 8 ON"
+      - http_request.post:
+          url: "http://${plug8_ip}/switch/kauf_plug/turn_on"
+      - delay: 500ms
+      - script.execute: plug8_update_state
+
+  - id: plug8_turn_off
+    then:
+      - logger.log: "Schedule: turning Plug 8 OFF"
+      - http_request.post:
+          url: "http://${plug8_ip}/switch/kauf_plug/turn_off"
+      - delay: 500ms
+      - script.execute: plug8_update_state
+
+  - id: plug8_update_state
+    then:
+      - http_request.get:
+          url: "http://${plug8_ip}/switch/kauf_plug"
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  bool on = body.find("\"state\":\"ON\"") != std::string::npos;
+                  id(plug8_ui_state) = on;
+                  auto col = on ? lv_color_hex(0x00FF00) : lv_color_hex(0xFF0000);
+                  lv_obj_set_style_bg_color(id(btn_plug8), col, LV_PART_MAIN);
+          on_error:
+            then:
+              - lambda: |-
+                  id(plug8_ui_state) = false;
+                  lv_obj_set_style_bg_color(id(btn_plug8), lv_color_hex(0xFF0000), LV_PART_MAIN);
+
+
+font:
+  - file: "gfonts://Roboto"
+    id: font_large
+    size: 26
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 18
+
+time:
+  - platform: sntp
+    id: sntp_time
+
+number:
+  # Plug 1
+  - platform: template
+    id: plug1_on_hour
+    name: "Plug 1 On Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 8
+    entity_category: "config"
+  - platform: template
+    id: plug1_on_minute
+    name: "Plug 1 On Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+  - platform: template
+    id: plug1_off_hour
+    name: "Plug 1 Off Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 6
+    entity_category: "config"
+  - platform: template
+    id: plug1_off_minute
+    name: "Plug 1 Off Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+
+  # Plug 2
+  - platform: template
+    id: plug2_on_hour
+    name: "Plug 2 On Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 8
+    entity_category: "config"
+  - platform: template
+    id: plug2_on_minute
+    name: "Plug 2 On Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+  - platform: template
+    id: plug2_off_hour
+    name: "Plug 2 Off Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 6
+    entity_category: "config"
+  - platform: template
+    id: plug2_off_minute
+    name: "Plug 2 Off Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+
+  # Plug 3
+  - platform: template
+    id: plug3_on_hour
+    name: "Plug 3 On Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 8
+    entity_category: "config"
+  - platform: template
+    id: plug3_on_minute
+    name: "Plug 3 On Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+  - platform: template
+    id: plug3_off_hour
+    name: "Plug 3 Off Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 6
+    entity_category: "config"
+  - platform: template
+    id: plug3_off_minute
+    name: "Plug 3 Off Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+
+  # Plug 4
+  - platform: template
+    id: plug4_on_hour
+    name: "Plug 4 On Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 8
+    entity_category: "config"
+  - platform: template
+    id: plug4_on_minute
+    name: "Plug 4 On Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+  - platform: template
+    id: plug4_off_hour
+    name: "Plug 4 Off Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 6
+    entity_category: "config"
+  - platform: template
+    id: plug4_off_minute
+    name: "Plug 4 Off Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+
+  # Plug 5
+  - platform: template
+    id: plug5_on_hour
+    name: "Plug 5 On Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 8
+    entity_category: "config"
+  - platform: template
+    id: plug5_on_minute
+    name: "Plug 5 On Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+  - platform: template
+    id: plug5_off_hour
+    name: "Plug 5 Off Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 6
+    entity_category: "config"
+  - platform: template
+    id: plug5_off_minute
+    name: "Plug 5 Off Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+
+  # Plug 6
+  - platform: template
+    id: plug6_on_hour
+    name: "Plug 6 On Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 8
+    entity_category: "config"
+  - platform: template
+    id: plug6_on_minute
+    name: "Plug 6 On Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+  - platform: template
+    id: plug6_off_hour
+    name: "Plug 6 Off Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 6
+    entity_category: "config"
+  - platform: template
+    id: plug6_off_minute
+    name: "Plug 6 Off Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+
+  # Plug 7
+  - platform: template
+    id: plug7_on_hour
+    name: "Plug 7 On Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 8
+    entity_category: "config"
+  - platform: template
+    id: plug7_on_minute
+    name: "Plug 7 On Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+  - platform: template
+    id: plug7_off_hour
+    name: "Plug 7 Off Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 6
+    entity_category: "config"
+  - platform: template
+    id: plug7_off_minute
+    name: "Plug 7 Off Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+
+  # Plug 8
+  - platform: template
+    id: plug8_on_hour
+    name: "Plug 8 On Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 8
+    entity_category: "config"
+  - platform: template
+    id: plug8_on_minute
+    name: "Plug 8 On Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+  - platform: template
+    id: plug8_off_hour
+    name: "Plug 8 Off Hour"
+    min_value: 1
+    max_value: 12
+    step: 1
+    optimistic: true
+    initial_value: 6
+    entity_category: "config"
+  - platform: template
+    id: plug8_off_minute
+    name: "Plug 8 Off Minute"
+    min_value: 0
+    max_value: 59
+    step: 1
+    optimistic: true
+    initial_value: 0
+    entity_category: "config"
+
+select:
+  # Plug 1
+  - platform: template
+    id: plug1_on_ampm
+    name: "Plug 1 On AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "AM"
+    entity_category: "config"
+  - platform: template
+    id: plug1_off_ampm
+    name: "Plug 1 Off AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "PM"
+    entity_category: "config"
+
+  # Plug 2
+  - platform: template
+    id: plug2_on_ampm
+    name: "Plug 2 On AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "AM"
+    entity_category: "config"
+  - platform: template
+    id: plug2_off_ampm
+    name: "Plug 2 Off AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "PM"
+    entity_category: "config"
+
+  # Plug 3
+  - platform: template
+    id: plug3_on_ampm
+    name: "Plug 3 On AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "AM"
+    entity_category: "config"
+  - platform: template
+    id: plug3_off_ampm
+    name: "Plug 3 Off AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "PM"
+    entity_category: "config"
+
+  # Plug 4
+  - platform: template
+    id: plug4_on_ampm
+    name: "Plug 4 On AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "AM"
+    entity_category: "config"
+  - platform: template
+    id: plug4_off_ampm
+    name: "Plug 4 Off AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "PM"
+    entity_category: "config"
+
+  # Plug 5
+  - platform: template
+    id: plug5_on_ampm
+    name: "Plug 5 On AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "AM"
+    entity_category: "config"
+  - platform: template
+    id: plug5_off_ampm
+    name: "Plug 5 Off AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "PM"
+    entity_category: "config"
+
+  # Plug 6
+  - platform: template
+    id: plug6_on_ampm
+    name: "Plug 6 On AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "AM"
+    entity_category: "config"
+  - platform: template
+    id: plug6_off_ampm
+    name: "Plug 6 Off AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "PM"
+    entity_category: "config"
+
+  # Plug 7
+  - platform: template
+    id: plug7_on_ampm
+    name: "Plug 7 On AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "AM"
+    entity_category: "config"
+  - platform: template
+    id: plug7_off_ampm
+    name: "Plug 7 Off AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "PM"
+    entity_category: "config"
+
+  # Plug 8
+  - platform: template
+    id: plug8_on_ampm
+    name: "Plug 8 On AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "AM"
+    entity_category: "config"
+  - platform: template
+    id: plug8_off_ampm
+    name: "Plug 8 Off AM/PM"
+    optimistic: true
+    options: ["AM", "PM"]
+    initial_option: "PM"
+    entity_category: "config"
+
+display:
+  - platform: rpi_dpi_rgb
+    id: waveshare_display
+    update_interval: never
+    auto_clear_enabled: false
+    color_order: RGB
+    pclk_frequency: 16MHz
+    dimensions:
+      width: 800
+      height: 480
+    de_pin:
+      number: 5
+    hsync_pin:
+      number: 46
+      ignore_strapping_warning: true
+    vsync_pin:
+      number: 3
+      ignore_strapping_warning: true
+    pclk_pin:
+      number: 7
+    pclk_inverted: true
+    reset_pin:
+      ch422g: ch422g_hub
+      number: 3
+    hsync_back_porch: 8
+    hsync_front_porch: 8
+    hsync_pulse_width: 4
+    vsync_back_porch: 16
+    vsync_front_porch: 16
+    vsync_pulse_width: 4
+    data_pins:
+      red:   [1, 2, 42, 41, 40]
+      blue:  [14, 38, 18, 17, 10]
+      green: [39, 0, 45, 48, 47, 21]
+
+touchscreen:
+  - platform: gt911
+    id: waveshare_touch
+    interrupt_pin: GPIO4
+    reset_pin:
+      ch422g: ch422g_hub
+      number: 1
+      mode: OUTPUT
+
+lvgl:
+  log_level: INFO
+  color_depth: 16
+  bg_color: 0x101830
+
+  displays:
+    - waveshare_display
+  touchscreens:
+    - waveshare_touch
+
+  on_ready:
+    then:
+      - lvgl.page.show:
+          id: main_page
+      - script.execute: register_activity
+      - script.execute: plug1_update_state
+      - script.execute: plug2_update_state
+      - script.execute: plug3_update_state
+      - script.execute: plug4_update_state
+      - script.execute: plug5_update_state
+      - script.execute: plug6_update_state
+      - script.execute: plug7_update_state
+      - script.execute: plug8_update_state
+      - lambda: |-
+          auto now = id(sntp_time).now();
+          if (!now.is_valid()) return;
+          char buf[16];
+          int h12 = now.hour % 12;
+          if (h12 == 0) h12 = 12;
+          bool pm = now.hour >= 12;
+          sprintf(buf, "%02d:%02d %s", h12, now.minute, pm ? "PM" : "AM");
+          lv_label_set_text(id(lbl_main_time), buf);
+          lv_label_set_text(id(lbl_timer1_clock), buf);
+          lv_label_set_text(id(lbl_timer2_clock), buf);
+          lv_label_set_text(id(lbl_timer3_clock), buf);
+          lv_label_set_text(id(lbl_timer4_clock), buf);
+          lv_label_set_text(id(lbl_timer5_clock), buf);
+          lv_label_set_text(id(lbl_timer6_clock), buf);
+          lv_label_set_text(id(lbl_timer7_clock), buf);
+          lv_label_set_text(id(lbl_timer8_clock), buf);
+
+                    lv_label_set_text(id(lbl_plug8_text), "PLUG 8");
+  pages:
+    # MAIN PAGE
+    - id: main_page
+      widgets:
+        # background only (no inner panel)
+        - obj:
+            id: main_bg
+            x: 0
+            y: 0
+            width: 800
+            height: 480
+            bg_color: 0x101830
+
+        - label:
+            id: lbl_main_title
+            align: top_mid
+            y: 10
+            text: "Boven Household Smart-Plug Control"
+            text_font: font_small
+            text_color: 0xFFFFFF
+
+        # row 1
+        - button:
+            id: btn_plug1
+            x: 20
+            y: 70
+            width: 230
+            height: 60
+            bg_color: 0xFF0000
+            widgets: [{ label: { text: "PLUG 1", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - http_request.post:
+                    url: "http://${plug1_ip}/switch/kauf_plug/toggle"
+                - delay: 500ms
+                - script.execute: plug1_update_state
+
+        - button:
+            id: btn_plug1_timer
+            x: 260
+            y: 70
+            width: 110
+            height: 60
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl1_timer_main
+                  text: "Timer OFF"
+                  align: center
+                  text_font: font_small
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug1_schedule_enabled).state;
+                    id(plug1_schedule_enabled).publish_state(!cur);
+                - lvgl.label.update:
+                    id: lbl1_timer_main
+                    text: !lambda |-
+                      return id(plug1_schedule_enabled).state
+                        ? std::string("Timer ON")
+                        : std::string("Timer OFF");
+                - lvgl.page.show: plug1_timer_page
+
+        - button:
+            id: btn_plug5
+            x: 410
+            y: 70
+            width: 230
+            height: 60
+            bg_color: 0xFF0000
+            widgets: [{ label: { text: "PLUG 5", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - http_request.post:
+                    url: "http://${plug5_ip}/switch/kauf_plug/toggle"
+                - delay: 500ms
+                - script.execute: plug5_update_state
+
+        - button:
+            id: btn_plug5_timer
+            x: 650
+            y: 70
+            width: 110
+            height: 60
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl5_timer_main
+                  text: "Timer OFF"
+                  align: center
+                  text_font: font_small
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug5_schedule_enabled).state;
+                    id(plug5_schedule_enabled).publish_state(!cur);
+                - lvgl.label.update:
+                    id: lbl5_timer_main
+                    text: !lambda |-
+                      return id(plug5_schedule_enabled).state
+                        ? std::string("Timer ON")
+                        : std::string("Timer OFF");
+                - lvgl.page.show: plug5_timer_page
+
+        # row 2
+        - button:
+            id: btn_plug2
+            x: 20
+            y: 150
+            width: 230
+            height: 60
+            bg_color: 0xFF0000
+            widgets: [{ label: { text: "PLUG 2", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - http_request.post:
+                    url: "http://${plug2_ip}/switch/kauf_plug/toggle"
+                - delay: 500ms
+                - script.execute: plug2_update_state
+
+        - button:
+            id: btn_plug2_timer
+            x: 260
+            y: 150
+            width: 110
+            height: 60
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl2_timer_main
+                  text: "Timer OFF"
+                  align: center
+                  text_font: font_small
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug2_schedule_enabled).state;
+                    id(plug2_schedule_enabled).publish_state(!cur);
+                - lvgl.label.update:
+                    id: lbl2_timer_main
+                    text: !lambda |-
+                      return id(plug2_schedule_enabled).state
+                        ? std::string("Timer ON")
+                        : std::string("Timer OFF");
+                - lvgl.page.show: plug2_timer_page
+
+        - button:
+            id: btn_plug6
+            x: 410
+            y: 150
+            width: 230
+            height: 60
+            bg_color: 0xFF0000
+            widgets: [{ label: { text: "PLUG 6", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - http_request.post:
+                    url: "http://${plug6_ip}/switch/kauf_plug/toggle"
+                - delay: 500ms
+                - script.execute: plug6_update_state
+
+        - button:
+            id: btn_plug6_timer
+            x: 650
+            y: 150
+            width: 110
+            height: 60
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl6_timer_main
+                  text: "Timer OFF"
+                  align: center
+                  text_font: font_small
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug6_schedule_enabled).state;
+                    id(plug6_schedule_enabled).publish_state(!cur);
+                - lvgl.label.update:
+                    id: lbl6_timer_main
+                    text: !lambda |-
+                      return id(plug6_schedule_enabled).state
+                        ? std::string("Timer ON")
+                        : std::string("Timer OFF");
+                - lvgl.page.show: plug6_timer_page
+
+        # row 3
+        - button:
+            id: btn_plug3
+            x: 20
+            y: 230
+            width: 230
+            height: 60
+            bg_color: 0xFF0000
+            widgets: [{ label: { text: "PLUG 3", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - http_request.post:
+                    url: "http://${plug3_ip}/switch/kauf_plug/toggle"
+                - delay: 500ms
+                - script.execute: plug3_update_state
+
+        - button:
+            id: btn_plug3_timer
+            x: 260
+            y: 230
+            width: 110
+            height: 60
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl3_timer_main
+                  text: "Timer OFF"
+                  align: center
+                  text_font: font_small
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug3_schedule_enabled).state;
+                    id(plug3_schedule_enabled).publish_state(!cur);
+                - lvgl.label.update:
+                    id: lbl3_timer_main
+                    text: !lambda |-
+                      return id(plug3_schedule_enabled).state
+                        ? std::string("Timer ON")
+                        : std::string("Timer OFF");
+                - lvgl.page.show: plug3_timer_page
+
+        - button:
+            id: btn_plug7
+            x: 410
+            y: 230
+            width: 230
+            height: 60
+            bg_color: 0xFF0000
+            widgets: [{ label: { text: "PLUG 7", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - http_request.post:
+                    url: "http://${plug7_ip}/switch/kauf_plug/toggle"
+                - delay: 500ms
+                - script.execute: plug7_update_state
+
+        - button:
+            id: btn_plug7_timer
+            x: 650
+            y: 230
+            width: 110
+            height: 60
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl7_timer_main
+                  text: "Timer OFF"
+                  align: center
+                  text_font: font_small
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug7_schedule_enabled).state;
+                    id(plug7_schedule_enabled).publish_state(!cur);
+                - lvgl.label.update:
+                    id: lbl7_timer_main
+                    text: !lambda |-
+                      return id(plug7_schedule_enabled).state
+                        ? std::string("Timer ON")
+                        : std::string("Timer OFF");
+                - lvgl.page.show: plug7_timer_page
+
+        # row 4
+        - button:
+            id: btn_plug4
+            x: 20
+            y: 310
+            width: 230
+            height: 60
+            bg_color: 0xFF0000
+            widgets: [{ label: { text: "PLUG 4", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - http_request.post:
+                    url: "http://${plug4_ip}/switch/kauf_plug/toggle"
+                - delay: 500ms
+                - script.execute: plug4_update_state
+
+        - button:
+            id: btn_plug4_timer
+            x: 260
+            y: 310
+            width: 110
+            height: 60
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl4_timer_main
+                  text: "Timer OFF"
+                  align: center
+                  text_font: font_small
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug4_schedule_enabled).state;
+                    id(plug4_schedule_enabled).publish_state(!cur);
+                - lvgl.label.update:
+                    id: lbl4_timer_main
+                    text: !lambda |-
+                      return id(plug4_schedule_enabled).state
+                        ? std::string("Timer ON")
+                        : std::string("Timer OFF");
+                - lvgl.page.show: plug4_timer_page
+
+        - button:
+            id: btn_plug8
+            x: 410
+            y: 310
+            width: 230
+            height: 60
+            bg_color: 0xFF0000
+            widgets:
+              - label:
+                  id: lbl_plug8_text     # text label for Plug 8 button
+                  text: "PLUG 8"         # initial, overridden in on_ready
+                  align: center
+                  text_font: font_small
+            on_click:
+              then:
+                - script.execute: register_activity
+                - script.execute: toggle_plug8_device
+
+        - button:
+            id: btn_plug8_timer
+            x: 650
+            y: 310
+            width: 110
+            height: 60
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl8_timer_main
+                  text: "Timer OFF"
+                  align: center
+                  text_font: font_small
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug8_schedule_enabled).state;
+                    id(plug8_schedule_enabled).publish_state(!cur);
+                - lvgl.label.update:
+                    id: lbl8_timer_main
+                    text: !lambda |-
+                      return id(plug8_schedule_enabled).state
+                        ? std::string("Timer ON")
+                        : std::string("Timer OFF");
+                - lvgl.page.show: plug8_timer_page
+
+        # backlight controls (shifted left so ON lines up with Timer 4)
+        - label:
+            x: 20
+            y: 396
+            text: "Backlight:"
+            text_font: font_small
+            text_color: 0xFFFFFF
+
+        - button:
+            id: btn_bl_auto
+            x: 130     # was 140
+            y: 386
+            width: 120
+            height: 50
+            bg_color: 0x228B22
+            widgets: [{ label: { text: "AUTO (5m)", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    id(bl_mode) = 0;
+                    lv_obj_set_style_bg_color(id(btn_bl_auto), lv_color_hex(0x228B22), LV_PART_MAIN);
+                    lv_obj_set_style_bg_color(id(btn_bl_on),   lv_color_hex(0x444444), LV_PART_MAIN);
+
+        - button:
+            id: btn_bl_on
+            x: 260     # was 270, now aligned under Plug 4 Timer
+            y: 386
+            width: 110
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "ON", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    id(bl_mode) = 1;
+                    id(lcd_backlight_sw).turn_on();
+                    auto call = id(lcdbacklight).turn_on();
+                    float bri = id(bl_level) / 100.0f;
+                    call.set_brightness(bri);
+                    call.perform();
+                    lv_obj_set_style_bg_color(id(btn_bl_on),   lv_color_hex(0x228B22), LV_PART_MAIN);
+                    lv_obj_set_style_bg_color(id(btn_bl_auto), lv_color_hex(0x444444), LV_PART_MAIN);
+                - script.execute: register_activity
+
+        # main page clock (bottom right)
+        # CLOCK POSITION ADJUSTMENT (moved down 5px)
+        - label:
+            id: lbl_main_time
+            x: 560
+            y: 392
+            text: "--:-- --"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+    # PLUG 1 TIMER PAGE
+    - id: plug1_timer_page
+      widgets:
+        - label:
+            id: lbl_timer1_title
+            x: 20
+            y: 10
+            text: "PLUG 1 TIMER"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        # clock on timer page
+        - label:
+            id: lbl_timer1_clock
+            x: 520
+            y: 20
+            text: "--:-- --"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        - button:
+            id: btn_timer1_back
+            x: 650
+            y: 10
+            width: 130
+            height: 60
+            bg_color: 0x333333
+            widgets: [{ label: { text: "BACK", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lvgl.page.show: main_page
+
+        - button:
+            id: btn_schedule1_toggle
+            x: 20
+            y: 70
+            width: 260
+            height: 60
+            bg_color: 0x555555
+            widgets:
+              - label:
+                  id: lbl_schedule1_state
+                  align: center
+                  text_font: font_small
+                  text_color: 0xFFFFFF
+                  text: "Schedule: OFF"
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug1_schedule_enabled).state;
+                    id(plug1_schedule_enabled).publish_state(!cur);
+                    auto lbl = id(lbl_schedule1_state);
+                    lv_label_set_text(lbl, !cur ? "Schedule: ON" : "Schedule: OFF");
+
+        - label:
+            id: lbl1_on_time
+            x: 20
+            y: 150
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "ON: 08:00 AM"
+
+        - button:
+            id: btn1_on_hour_minus
+            x: 20
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug1_on_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug1_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl1_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug1_on_hour).state;
+                      int m = (int) id(plug1_on_minute).state;
+                      auto ampm = id(plug1_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn1_on_hour_plus
+            x: 110
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug1_on_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug1_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl1_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug1_on_hour).state;
+                      int m = (int) id(plug1_on_minute).state;
+                      auto ampm = id(plug1_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn1_on_minute_minus
+            x: 200
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug1_on_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug1_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl1_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug1_on_hour).state;
+                      int m = (int) id(plug1_on_minute).state;
+                      auto ampm = id(plug1_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn1_on_minute_plus
+            x: 290
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug1_on_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug1_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl1_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug1_on_hour).state;
+                      int m = (int) id(plug1_on_minute).state;
+                      auto ampm = id(plug1_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn1_on_ampm
+            x: 380
+            y: 190
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl1_on_ampm
+                  align: center
+                  text_font: font_small
+                  text: "AM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug1_on_ampm).state;
+                    id(plug1_on_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl1_on_ampm
+                    text: !lambda |-
+                      return id(plug1_on_ampm).state;
+                - lvgl.label.update:
+                    id: lbl1_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug1_on_hour).state;
+                      int m = (int) id(plug1_on_minute).state;
+                      auto ampm = id(plug1_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - label:
+            id: lbl1_off_time
+            x: 20
+            y: 270
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "OFF: 06:00 PM"
+
+        - button:
+            id: btn1_off_hour_minus
+            x: 20
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug1_off_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug1_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl1_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug1_off_hour).state;
+                      int m = (int) id(plug1_off_minute).state;
+                      auto ampm = id(plug1_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn1_off_hour_plus
+            x: 110
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug1_off_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug1_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl1_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug1_off_hour).state;
+                      int m = (int) id(plug1_off_minute).state;
+                      auto ampm = id(plug1_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn1_off_minute_minus
+            x: 200
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug1_off_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug1_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl1_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug1_off_hour).state;
+                      int m = (int) id(plug1_off_minute).state;
+                      auto ampm = id(plug1_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn1_off_minute_plus
+            x: 290
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug1_off_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug1_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl1_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug1_off_hour).state;
+                      int m = (int) id(plug1_off_minute).state;
+                      auto ampm = id(plug1_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn1_off_ampm
+            x: 380
+            y: 310
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl1_off_ampm
+                  align: center
+                  text_font: font_small
+                  text: "PM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug1_off_ampm).state;
+                    id(plug1_off_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl1_off_ampm
+                    text: !lambda |-
+                      return id(plug1_off_ampm).state;
+                - lvgl.label.update:
+                    id: lbl1_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug1_off_hour).state;
+                      int m = (int) id(plug1_off_minute).state;
+                      auto ampm = id(plug1_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+    # PLUG 2 TIMER PAGE
+    - id: plug2_timer_page
+      widgets:
+        - label:
+            id: lbl_timer2_title
+            x: 20
+            y: 10
+            text: "PLUG 2 TIMER"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        # clock on timer page
+        - label:
+            id: lbl_timer2_clock
+            x: 520
+            y: 20
+            text: "--:-- --"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        - button:
+            id: btn_timer2_back
+            x: 650
+            y: 10
+            width: 130
+            height: 60
+            bg_color: 0x333333
+            widgets: [{ label: { text: "BACK", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lvgl.page.show: main_page
+
+        - button:
+            id: btn_schedule2_toggle
+            x: 20
+            y: 70
+            width: 260
+            height: 60
+            bg_color: 0x555555
+            widgets:
+              - label:
+                  id: lbl_schedule2_state
+                  align: center
+                  text_font: font_small
+                  text_color: 0xFFFFFF
+                  text: "Schedule: OFF"
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug2_schedule_enabled).state;
+                    id(plug2_schedule_enabled).publish_state(!cur);
+                    auto lbl = id(lbl_schedule2_state);
+                    lv_label_set_text(lbl, !cur ? "Schedule: ON" : "Schedule: OFF");
+
+        - label:
+            id: lbl2_on_time
+            x: 20
+            y: 150
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "ON: 08:00 AM"
+
+        - button:
+            id: btn2_on_hour_minus
+            x: 20
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug2_on_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug2_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl2_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug2_on_hour).state;
+                      int m = (int) id(plug2_on_minute).state;
+                      auto ampm = id(plug2_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn2_on_hour_plus
+            x: 110
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug2_on_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug2_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl2_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug2_on_hour).state;
+                      int m = (int) id(plug2_on_minute).state;
+                      auto ampm = id(plug2_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn2_on_minute_minus
+            x: 200
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug2_on_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug2_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl2_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug2_on_hour).state;
+                      int m = (int) id(plug2_on_minute).state;
+                      auto ampm = id(plug2_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn2_on_minute_plus
+            x: 290
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug2_on_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug2_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl2_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug2_on_hour).state;
+                      int m = (int) id(plug2_on_minute).state;
+                      auto ampm = id(plug2_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn2_on_ampm
+            x: 380
+            y: 190
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl2_on_ampm
+                  align: center
+                  text_font: font_small
+                  text: "AM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug2_on_ampm).state;
+                    id(plug2_on_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl2_on_ampm
+                    text: !lambda |-
+                      return id(plug2_on_ampm).state;
+                - lvgl.label.update:
+                    id: lbl2_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug2_on_hour).state;
+                      int m = (int) id(plug2_on_minute).state;
+                      auto ampm = id(plug2_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - label:
+            id: lbl2_off_time
+            x: 20
+            y: 270
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "OFF: 06:00 PM"
+
+        - button:
+            id: btn2_off_hour_minus
+            x: 20
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug2_off_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug2_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl2_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug2_off_hour).state;
+                      int m = (int) id(plug2_off_minute).state;
+                      auto ampm = id(plug2_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn2_off_hour_plus
+            x: 110
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug2_off_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug2_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl2_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug2_off_hour).state;
+                      int m = (int) id(plug2_off_minute).state;
+                      auto ampm = id(plug2_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn2_off_minute_minus
+            x: 200
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug2_off_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug2_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl2_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug2_off_hour).state;
+                      int m = (int) id(plug2_off_minute).state;
+                      auto ampm = id(plug2_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn2_off_minute_plus
+            x: 290
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug2_off_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug2_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl2_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug2_off_hour).state;
+                      int m = (int) id(plug2_off_minute).state;
+                      auto ampm = id(plug2_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn2_off_ampm
+            x: 380
+            y: 310
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl2_off_ampm
+                  align: center
+                  text_font: font_small
+                  text: "PM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug2_off_ampm).state;
+                    id(plug2_off_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl2_off_ampm
+                    text: !lambda |-
+                      return id(plug2_off_ampm).state;
+                - lvgl.label.update:
+                    id: lbl2_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug2_off_hour).state;
+                      int m = (int) id(plug2_off_minute).state;
+                      auto ampm = id(plug2_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+    # PLUG 3 TIMER PAGE (NEW – same style as 1 & 2)
+    - id: plug3_timer_page
+      widgets:
+        - label:
+            id: lbl_timer3_title
+            x: 20
+            y: 10
+            text: "PLUG 3 TIMER"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        # clock on timer page
+        - label:
+            id: lbl_timer3_clock
+            x: 520
+            y: 20
+            text: "--:-- --"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        - button:
+            id: btn_timer3_back
+            x: 650
+            y: 10
+            width: 130
+            height: 60
+            bg_color: 0x333333
+            widgets: [{ label: { text: "BACK", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lvgl.page.show: main_page
+
+        - button:
+            id: btn_schedule3_toggle
+            x: 20
+            y: 70
+            width: 260
+            height: 60
+            bg_color: 0x555555
+            widgets:
+              - label:
+                  id: lbl_schedule3_state
+                  align: center
+                  text_font: font_small
+                  text_color: 0xFFFFFF
+                  text: "Schedule: OFF"
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug3_schedule_enabled).state;
+                    id(plug3_schedule_enabled).publish_state(!cur);
+                    auto lbl = id(lbl_schedule3_state);
+                    lv_label_set_text(lbl, !cur ? "Schedule: ON" : "Schedule: OFF");
+
+        - label:
+            id: lbl3_on_time
+            x: 20
+            y: 150
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "ON: 08:00 AM"
+
+        - button:
+            id: btn3_on_hour_minus
+            x: 20
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug3_on_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug3_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl3_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug3_on_hour).state;
+                      int m = (int) id(plug3_on_minute).state;
+                      auto ampm = id(plug3_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn3_on_hour_plus
+            x: 110
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug3_on_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug3_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl3_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug3_on_hour).state;
+                      int m = (int) id(plug3_on_minute).state;
+                      auto ampm = id(plug3_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn3_on_minute_minus
+            x: 200
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug3_on_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug3_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl3_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug3_on_hour).state;
+                      int m = (int) id(plug3_on_minute).state;
+                      auto ampm = id(plug3_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn3_on_minute_plus
+            x: 290
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug3_on_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug3_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl3_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug3_on_hour).state;
+                      int m = (int) id(plug3_on_minute).state;
+                      auto ampm = id(plug3_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn3_on_ampm
+            x: 380
+            y: 190
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl3_on_ampm
+                  align: center
+                  text_font: font_small
+                  text: "AM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug3_on_ampm).state;
+                    id(plug3_on_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl3_on_ampm
+                    text: !lambda |-
+                      return id(plug3_on_ampm).state;
+                - lvgl.label.update:
+                    id: lbl3_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug3_on_hour).state;
+                      int m = (int) id(plug3_on_minute).state;
+                      auto ampm = id(plug3_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - label:
+            id: lbl3_off_time
+            x: 20
+            y: 270
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "OFF: 06:00 PM"
+
+        - button:
+            id: btn3_off_hour_minus
+            x: 20
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug3_off_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug3_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl3_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug3_off_hour).state;
+                      int m = (int) id(plug3_off_minute).state;
+                      auto ampm = id(plug3_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn3_off_hour_plus
+            x: 110
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug3_off_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug3_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl3_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug3_off_hour).state;
+                      int m = (int) id(plug3_off_minute).state;
+                      auto ampm = id(plug3_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn3_off_minute_minus
+            x: 200
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug3_off_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug3_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl3_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug3_off_hour).state;
+                      int m = (int) id(plug3_off_minute).state;
+                      auto ampm = id(plug3_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn3_off_minute_plus
+            x: 290
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug3_off_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug3_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl3_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug3_off_hour).state;
+                      int m = (int) id(plug3_off_minute).state;
+                      auto ampm = id(plug3_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn3_off_ampm
+            x: 380
+            y: 310
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl3_off_ampm
+                  align: center
+                  text_font: font_small
+                  text: "PM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug3_off_ampm).state;
+                    id(plug3_off_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl3_off_ampm
+                    text: !lambda |-
+                      return id(plug3_off_ampm).state;
+                - lvgl.label.update:
+                    id: lbl3_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug3_off_hour).state;
+                      int m = (int) id(plug3_off_minute).state;
+                      auto ampm = id(plug3_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+    # PLUG 4 TIMER PAGE
+    - id: plug4_timer_page
+      widgets:
+        - label:
+            id: lbl_timer4_title
+            x: 20
+            y: 10
+            text: "PLUG 4 TIMER"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        # clock on timer page
+        - label:
+            id: lbl_timer4_clock
+            x: 520
+            y: 20
+            text: "--:-- --"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        - button:
+            id: btn_timer4_back
+            x: 650
+            y: 10
+            width: 130
+            height: 60
+            bg_color: 0x333333
+            widgets: [{ label: { text: "BACK", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lvgl.page.show: main_page
+
+        - button:
+            id: btn_schedule4_toggle
+            x: 20
+            y: 70
+            width: 260
+            height: 60
+            bg_color: 0x555555
+            widgets:
+              - label:
+                  id: lbl_schedule4_state
+                  align: center
+                  text_font: font_small
+                  text_color: 0xFFFFFF
+                  text: "Schedule: OFF"
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug4_schedule_enabled).state;
+                    id(plug4_schedule_enabled).publish_state(!cur);
+                    auto lbl = id(lbl_schedule4_state);
+                    lv_label_set_text(lbl, !cur ? "Schedule: ON" : "Schedule: OFF");
+
+        - label:
+            id: lbl4_on_time
+            x: 20
+            y: 150
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "ON: 08:00 AM"
+
+        - button:
+            id: btn4_on_hour_minus
+            x: 20
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug4_on_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug4_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl4_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug4_on_hour).state;
+                      int m = (int) id(plug4_on_minute).state;
+                      auto ampm = id(plug4_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn4_on_hour_plus
+            x: 110
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug4_on_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug4_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl4_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug4_on_hour).state;
+                      int m = (int) id(plug4_on_minute).state;
+                      auto ampm = id(plug4_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn4_on_minute_minus
+            x: 200
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug4_on_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug4_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl4_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug4_on_hour).state;
+                      int m = (int) id(plug4_on_minute).state;
+                      auto ampm = id(plug4_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn4_on_minute_plus
+            x: 290
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug4_on_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug4_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl4_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug4_on_hour).state;
+                      int m = (int) id(plug4_on_minute).state;
+                      auto ampm = id(plug4_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn4_on_ampm
+            x: 380
+            y: 190
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl4_on_ampm
+                  align: center
+                  text_font: font_small
+                  text: "AM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug4_on_ampm).state;
+                    id(plug4_on_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl4_on_ampm
+                    text: !lambda |-
+                      return id(plug4_on_ampm).state;
+                - lvgl.label.update:
+                    id: lbl4_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug4_on_hour).state;
+                      int m = (int) id(plug4_on_minute).state;
+                      auto ampm = id(plug4_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - label:
+            id: lbl4_off_time
+            x: 20
+            y: 270
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "OFF: 06:00 PM"
+
+        - button:
+            id: btn4_off_hour_minus
+            x: 20
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug4_off_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug4_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl4_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug4_off_hour).state;
+                      int m = (int) id(plug4_off_minute).state;
+                      auto ampm = id(plug4_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn4_off_hour_plus
+            x: 110
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug4_off_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug4_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl4_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug4_off_hour).state;
+                      int m = (int) id(plug4_off_minute).state;
+                      auto ampm = id(plug4_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn4_off_minute_minus
+            x: 200
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug4_off_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug4_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl4_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug4_off_hour).state;
+                      int m = (int) id(plug4_off_minute).state;
+                      auto ampm = id(plug4_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn4_off_minute_plus
+            x: 290
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug4_off_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug4_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl4_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug4_off_hour).state;
+                      int m = (int) id(plug4_off_minute).state;
+                      auto ampm = id(plug4_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn4_off_ampm
+            x: 380
+            y: 310
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl4_off_ampm
+                  align: center
+                  text_font: font_small
+                  text: "PM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug4_off_ampm).state;
+                    id(plug4_off_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl4_off_ampm
+                    text: !lambda |-
+                      return id(plug4_off_ampm).state;
+                - lvgl.label.update:
+                    id: lbl4_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug4_off_hour).state;
+                      int m = (int) id(plug4_off_minute).state;
+                      auto ampm = id(plug4_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+    # PLUG 5 TIMER PAGE
+    - id: plug5_timer_page
+      widgets:
+        - label:
+            id: lbl_timer5_title
+            x: 20
+            y: 10
+            text: "PLUG 5 TIMER"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        # clock on timer page
+        - label:
+            id: lbl_timer5_clock
+            x: 520
+            y: 20
+            text: "--:-- --"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        - button:
+            id: btn_timer5_back
+            x: 650
+            y: 10
+            width: 130
+            height: 60
+            bg_color: 0x333333
+            widgets: [{ label: { text: "BACK", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lvgl.page.show: main_page
+
+        - button:
+            id: btn_schedule5_toggle
+            x: 20
+            y: 70
+            width: 260
+            height: 60
+            bg_color: 0x555555
+            widgets:
+              - label:
+                  id: lbl_schedule5_state
+                  align: center
+                  text_font: font_small
+                  text_color: 0xFFFFFF
+                  text: "Schedule: OFF"
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug5_schedule_enabled).state;
+                    id(plug5_schedule_enabled).publish_state(!cur);
+                    auto lbl = id(lbl_schedule5_state);
+                    lv_label_set_text(lbl, !cur ? "Schedule: ON" : "Schedule: OFF");
+
+        - label:
+            id: lbl5_on_time
+            x: 20
+            y: 150
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "ON: 08:00 AM"
+
+        - button:
+            id: btn5_on_hour_minus
+            x: 20
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug5_on_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug5_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl5_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug5_on_hour).state;
+                      int m = (int) id(plug5_on_minute).state;
+                      auto ampm = id(plug5_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn5_on_hour_plus
+            x: 110
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug5_on_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug5_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl5_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug5_on_hour).state;
+                      int m = (int) id(plug5_on_minute).state;
+                      auto ampm = id(plug5_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn5_on_minute_minus
+            x: 200
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug5_on_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug5_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl5_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug5_on_hour).state;
+                      int m = (int) id(plug5_on_minute).state;
+                      auto ampm = id(plug5_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn5_on_minute_plus
+            x: 290
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug5_on_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug5_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl5_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug5_on_hour).state;
+                      int m = (int) id(plug5_on_minute).state;
+                      auto ampm = id(plug5_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn5_on_ampm
+            x: 380
+            y: 190
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl5_on_ampm
+                  align: center
+                  text_font: font_small
+                  text: "AM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug5_on_ampm).state;
+                    id(plug5_on_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl5_on_ampm
+                    text: !lambda |-
+                      return id(plug5_on_ampm).state;
+                - lvgl.label.update:
+                    id: lbl5_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug5_on_hour).state;
+                      int m = (int) id(plug5_on_minute).state;
+                      auto ampm = id(plug5_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - label:
+            id: lbl5_off_time
+            x: 20
+            y: 270
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "OFF: 06:00 PM"
+
+        - button:
+            id: btn5_off_hour_minus
+            x: 20
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug5_off_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug5_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl5_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug5_off_hour).state;
+                      int m = (int) id(plug5_off_minute).state;
+                      auto ampm = id(plug5_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn5_off_hour_plus
+            x: 110
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug5_off_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug5_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl5_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug5_off_hour).state;
+                      int m = (int) id(plug5_off_minute).state;
+                      auto ampm = id(plug5_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn5_off_minute_minus
+            x: 200
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug5_off_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug5_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl5_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug5_off_hour).state;
+                      int m = (int) id(plug5_off_minute).state;
+                      auto ampm = id(plug5_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn5_off_minute_plus
+            x: 290
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug5_off_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug5_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl5_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug5_off_hour).state;
+                      int m = (int) id(plug5_off_minute).state;
+                      auto ampm = id(plug5_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn5_off_ampm
+            x: 380
+            y: 310
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl5_off_ampm
+                  align: center
+                  text_font: font_small
+                  text: "PM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug5_off_ampm).state;
+                    id(plug5_off_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl5_off_ampm
+                    text: !lambda |-
+                      return id(plug5_off_ampm).state;
+                - lvgl.label.update:
+                    id: lbl5_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug5_off_hour).state;
+                      int m = (int) id(plug5_off_minute).state;
+                      auto ampm = id(plug5_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+    # PLUG 6 TIMER PAGE
+    - id: plug6_timer_page
+      widgets:
+        - label:
+            id: lbl_timer6_title
+            x: 20
+            y: 10
+            text: "PLUG 6 TIMER"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        # clock on timer page
+        - label:
+            id: lbl_timer6_clock
+            x: 520
+            y: 20
+            text: "--:-- --"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        - button:
+            id: btn_timer6_back
+            x: 650
+            y: 10
+            width: 130
+            height: 60
+            bg_color: 0x333333
+            widgets: [{ label: { text: "BACK", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lvgl.page.show: main_page
+
+        - button:
+            id: btn_schedule6_toggle
+            x: 20
+            y: 70
+            width: 260
+            height: 60
+            bg_color: 0x555555
+            widgets:
+              - label:
+                  id: lbl_schedule6_state
+                  align: center
+                  text_font: font_small
+                  text_color: 0xFFFFFF
+                  text: "Schedule: OFF"
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug6_schedule_enabled).state;
+                    id(plug6_schedule_enabled).publish_state(!cur);
+                    auto lbl = id(lbl_schedule6_state);
+                    lv_label_set_text(lbl, !cur ? "Schedule: ON" : "Schedule: OFF");
+
+        - label:
+            id: lbl6_on_time
+            x: 20
+            y: 150
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "ON: 08:00 AM"
+
+        - button:
+            id: btn6_on_hour_minus
+            x: 20
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug6_on_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug6_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl6_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug6_on_hour).state;
+                      int m = (int) id(plug6_on_minute).state;
+                      auto ampm = id(plug6_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn6_on_hour_plus
+            x: 110
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug6_on_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug6_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl6_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug6_on_hour).state;
+                      int m = (int) id(plug6_on_minute).state;
+                      auto ampm = id(plug6_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn6_on_minute_minus
+            x: 200
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug6_on_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug6_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl6_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug6_on_hour).state;
+                      int m = (int) id(plug6_on_minute).state;
+                      auto ampm = id(plug6_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn6_on_minute_plus
+            x: 290
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug6_on_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug6_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl6_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug6_on_hour).state;
+                      int m = (int) id(plug6_on_minute).state;
+                      auto ampm = id(plug6_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn6_on_ampm
+            x: 380
+            y: 190
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl6_on_ampm
+                  align: center
+                  text_font: font_small
+                  text: "AM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug6_on_ampm).state;
+                    id(plug6_on_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl6_on_ampm
+                    text: !lambda |-
+                      return id(plug6_on_ampm).state;
+                - lvgl.label.update:
+                    id: lbl6_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug6_on_hour).state;
+                      int m = (int) id(plug6_on_minute).state;
+                      auto ampm = id(plug6_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - label:
+            id: lbl6_off_time
+            x: 20
+            y: 270
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "OFF: 06:00 PM"
+
+        - button:
+            id: btn6_off_hour_minus
+            x: 20
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug6_off_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug6_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl6_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug6_off_hour).state;
+                      int m = (int) id(plug6_off_minute).state;
+                      auto ampm = id(plug6_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn6_off_hour_plus
+            x: 110
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug6_off_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug6_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl6_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug6_off_hour).state;
+                      int m = (int) id(plug6_off_minute).state;
+                      auto ampm = id(plug6_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn6_off_minute_minus
+            x: 200
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug6_off_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug6_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl6_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug6_off_hour).state;
+                      int m = (int) id(plug6_off_minute).state;
+                      auto ampm = id(plug6_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn6_off_minute_plus
+            x: 290
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug6_off_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug6_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl6_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug6_off_hour).state;
+                      int m = (int) id(plug6_off_minute).state;
+                      auto ampm = id(plug6_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn6_off_ampm
+            x: 380
+            y: 310
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl6_off_ampm
+                  align: center
+                  text_font: font_small
+                  text: "PM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug6_off_ampm).state;
+                    id(plug6_off_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl6_off_ampm
+                    text: !lambda |-
+                      return id(plug6_off_ampm).state;
+                - lvgl.label.update:
+                    id: lbl6_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug6_off_hour).state;
+                      int m = (int) id(plug6_off_minute).state;
+                      auto ampm = id(plug6_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+    # PLUG 7 TIMER PAGE
+    - id: plug7_timer_page
+      widgets:
+        - label:
+            id: lbl_timer7_title
+            x: 20
+            y: 10
+            text: "PLUG 7 TIMER"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        # clock on timer page
+        - label:
+            id: lbl_timer7_clock
+            x: 520
+            y: 20
+            text: "--:-- --"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        - button:
+            id: btn_timer7_back
+            x: 650
+            y: 10
+            width: 130
+            height: 60
+            bg_color: 0x333333
+            widgets: [{ label: { text: "BACK", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lvgl.page.show: main_page
+
+        - button:
+            id: btn_schedule7_toggle
+            x: 20
+            y: 70
+            width: 260
+            height: 60
+            bg_color: 0x555555
+            widgets:
+              - label:
+                  id: lbl_schedule7_state
+                  align: center
+                  text_font: font_small
+                  text_color: 0xFFFFFF
+                  text: "Schedule: OFF"
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug7_schedule_enabled).state;
+                    id(plug7_schedule_enabled).publish_state(!cur);
+                    auto lbl = id(lbl_schedule7_state);
+                    lv_label_set_text(lbl, !cur ? "Schedule: ON" : "Schedule: OFF");
+
+        - label:
+            id: lbl7_on_time
+            x: 20
+            y: 150
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "ON: 08:00 AM"
+
+        - button:
+            id: btn7_on_hour_minus
+            x: 20
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug7_on_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug7_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl7_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug7_on_hour).state;
+                      int m = (int) id(plug7_on_minute).state;
+                      auto ampm = id(plug7_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn7_on_hour_plus
+            x: 110
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug7_on_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug7_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl7_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug7_on_hour).state;
+                      int m = (int) id(plug7_on_minute).state;
+                      auto ampm = id(plug7_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn7_on_minute_minus
+            x: 200
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug7_on_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug7_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl7_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug7_on_hour).state;
+                      int m = (int) id(plug7_on_minute).state;
+                      auto ampm = id(plug7_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn7_on_minute_plus
+            x: 290
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug7_on_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug7_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl7_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug7_on_hour).state;
+                      int m = (int) id(plug7_on_minute).state;
+                      auto ampm = id(plug7_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn7_on_ampm
+            x: 380
+            y: 190
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl7_on_ampm
+                  align: center
+                  text_font: font_small
+                  text: "AM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug7_on_ampm).state;
+                    id(plug7_on_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl7_on_ampm
+                    text: !lambda |-
+                      return id(plug7_on_ampm).state;
+                - lvgl.label.update:
+                    id: lbl7_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug7_on_hour).state;
+                      int m = (int) id(plug7_on_minute).state;
+                      auto ampm = id(plug7_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - label:
+            id: lbl7_off_time
+            x: 20
+            y: 270
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "OFF: 06:00 PM"
+
+        - button:
+            id: btn7_off_hour_minus
+            x: 20
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug7_off_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug7_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl7_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug7_off_hour).state;
+                      int m = (int) id(plug7_off_minute).state;
+                      auto ampm = id(plug7_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn7_off_hour_plus
+            x: 110
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug7_off_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug7_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl7_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug7_off_hour).state;
+                      int m = (int) id(plug7_off_minute).state;
+                      auto ampm = id(plug7_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn7_off_minute_minus
+            x: 200
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug7_off_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug7_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl7_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug7_off_hour).state;
+                      int m = (int) id(plug7_off_minute).state;
+                      auto ampm = id(plug7_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn7_off_minute_plus
+            x: 290
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug7_off_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug7_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl7_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug7_off_hour).state;
+                      int m = (int) id(plug7_off_minute).state;
+                      auto ampm = id(plug7_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn7_off_ampm
+            x: 380
+            y: 310
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl7_off_ampm
+                  align: center
+                  text_font: font_small
+                  text: "PM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug7_off_ampm).state;
+                    id(plug7_off_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl7_off_ampm
+                    text: !lambda |-
+                      return id(plug7_off_ampm).state;
+                - lvgl.label.update:
+                    id: lbl7_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug7_off_hour).state;
+                      int m = (int) id(plug7_off_minute).state;
+                      auto ampm = id(plug7_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+    # PLUG 8 TIMER PAGE
+    - id: plug8_timer_page
+      widgets:
+        - label:
+            id: lbl_timer8_title
+            x: 20
+            y: 10
+            text: "PLUG 8 TIMER"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        # clock on timer page
+        - label:
+            id: lbl_timer8_clock
+            x: 520
+            y: 20
+            text: "--:-- --"
+            text_font: font_large
+            text_color: 0xFFFFFF
+
+        - button:
+            id: btn_timer8_back
+            x: 650
+            y: 10
+            width: 130
+            height: 60
+            bg_color: 0x333333
+            widgets: [{ label: { text: "BACK", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lvgl.page.show: main_page
+
+        - button:
+            id: btn_schedule8_toggle
+            x: 20
+            y: 70
+            width: 260
+            height: 60
+            bg_color: 0x555555
+            widgets:
+              - label:
+                  id: lbl_schedule8_state
+                  align: center
+                  text_font: font_small
+                  text_color: 0xFFFFFF
+                  text: "Schedule: OFF"
+            on_click:
+              then:
+                - script.execute: register_activity
+                - lambda: |-
+                    bool cur = id(plug8_schedule_enabled).state;
+                    id(plug8_schedule_enabled).publish_state(!cur);
+                    auto lbl = id(lbl_schedule8_state);
+                    lv_label_set_text(lbl, !cur ? "Schedule: ON" : "Schedule: OFF");
+
+        - label:
+            id: lbl8_on_time
+            x: 20
+            y: 150
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "ON: 08:00 AM"
+
+        - button:
+            id: btn8_on_hour_minus
+            x: 20
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug8_on_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug8_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl8_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug8_on_hour).state;
+                      int m = (int) id(plug8_on_minute).state;
+                      auto ampm = id(plug8_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn8_on_hour_plus
+            x: 110
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug8_on_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug8_on_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl8_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug8_on_hour).state;
+                      int m = (int) id(plug8_on_minute).state;
+                      auto ampm = id(plug8_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn8_on_minute_minus
+            x: 200
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug8_on_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug8_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl8_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug8_on_hour).state;
+                      int m = (int) id(plug8_on_minute).state;
+                      auto ampm = id(plug8_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn8_on_minute_plus
+            x: 290
+            y: 190
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug8_on_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug8_on_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl8_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug8_on_hour).state;
+                      int m = (int) id(plug8_on_minute).state;
+                      auto ampm = id(plug8_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn8_on_ampm
+            x: 380
+            y: 190
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl8_on_ampm
+                  align: center
+                  text_font: font_small
+                  text: "AM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug8_on_ampm).state;
+                    id(plug8_on_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl8_on_ampm
+                    text: !lambda |-
+                      return id(plug8_on_ampm).state;
+                - lvgl.label.update:
+                    id: lbl8_on_time
+                    text: !lambda |-
+                      int h = (int) id(plug8_on_hour).state;
+                      int m = (int) id(plug8_on_minute).state;
+                      auto ampm = id(plug8_on_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "ON: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - label:
+            id: lbl8_off_time
+            x: 20
+            y: 270
+            text_font: font_small
+            text_color: 0xFFFFFF
+            text: "OFF: 06:00 PM"
+
+        - button:
+            id: btn8_off_hour_minus
+            x: 20
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug8_off_hour).state;
+                    h = (h <= 1) ? 12 : h - 1;
+                    id(plug8_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl8_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug8_off_hour).state;
+                      int m = (int) id(plug8_off_minute).state;
+                      auto ampm = id(plug8_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn8_off_hour_plus
+            x: 110
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "H+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int h = (int) id(plug8_off_hour).state;
+                    h = (h >= 12) ? 1 : h + 1;
+                    id(plug8_off_hour).publish_state(h);
+                - lvgl.label.update:
+                    id: lbl8_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug8_off_hour).state;
+                      int m = (int) id(plug8_off_minute).state;
+                      auto ampm = id(plug8_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn8_off_minute_minus
+            x: 200
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M-", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug8_off_minute).state;
+                    m = (m <= 0) ? 59 : m - 1;
+                    id(plug8_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl8_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug8_off_hour).state;
+                      int m = (int) id(plug8_off_minute).state;
+                      auto ampm = id(plug8_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn8_off_minute_plus
+            x: 290
+            y: 310
+            width: 80
+            height: 50
+            bg_color: 0x444444
+            widgets: [{ label: { text: "M+", align: center, text_font: font_small }}]
+            on_click:
+              then:
+                - lambda: |-
+                    int m = (int) id(plug8_off_minute).state;
+                    m = (m >= 59) ? 0 : m + 1;
+                    id(plug8_off_minute).publish_state(m);
+                - lvgl.label.update:
+                    id: lbl8_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug8_off_hour).state;
+                      int m = (int) id(plug8_off_minute).state;
+                      auto ampm = id(plug8_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+        - button:
+            id: btn8_off_ampm
+            x: 380
+            y: 310
+            width: 100
+            height: 50
+            bg_color: 0x444444
+            widgets:
+              - label:
+                  id: lbl8_off_ampm
+                  align: center
+                  text_font: font_small
+                  text: "PM"
+            on_click:
+              then:
+                - lambda: |-
+                    auto cur = id(plug8_off_ampm).state;
+                    id(plug8_off_ampm).publish_state(cur == "AM" ? "PM" : "AM");
+                - lvgl.label.update:
+                    id: lbl8_off_ampm
+                    text: !lambda |-
+                      return id(plug8_off_ampm).state;
+                - lvgl.label.update:
+                    id: lbl8_off_time
+                    text: !lambda |-
+                      int h = (int) id(plug8_off_hour).state;
+                      int m = (int) id(plug8_off_minute).state;
+                      auto ampm = id(plug8_off_ampm).state;
+                      char buf[24];
+                      sprintf(buf, "OFF: %02d:%02d %s", h, m, ampm.c_str());
+                      return std::string(buf);
+
+interval:
+  - interval: 10s
+    then:
+      - script.execute: bl_auto_off_check
+
+  - interval: 2min
+    then:
+      # Periodic state refresh. Only plug1 is active right now.
+      - script.execute: plug1_update_state
+
+  # clock update every 10s
+  - interval: 10s
+    then:
+      - lambda: |-
+          auto now = id(sntp_time).now();
+          if (!now.is_valid()) return;
+          char buf[16];
+          int h12 = now.hour % 12;
+          if (h12 == 0) h12 = 12;
+          bool pm = now.hour >= 12;
+          sprintf(buf, "%02d:%02d %s", h12, now.minute, pm ? "PM" : "AM");
+          lv_label_set_text(id(lbl_main_time), buf);
+          lv_label_set_text(id(lbl_timer1_clock), buf);
+          lv_label_set_text(id(lbl_timer2_clock), buf);
+          lv_label_set_text(id(lbl_timer3_clock), buf);
+          lv_label_set_text(id(lbl_timer4_clock), buf);
+          lv_label_set_text(id(lbl_timer5_clock), buf);
+          lv_label_set_text(id(lbl_timer6_clock), buf);
+          lv_label_set_text(id(lbl_timer7_clock), buf);
+          lv_label_set_text(id(lbl_timer8_clock), buf);
+
+  # Plug 1 schedule
+  - interval: 1min
+    then:
+      - lambda: |-
+          auto now = id(sntp_time).now();
+          if (!now.is_valid()) return;
+          if (!id(plug1_schedule_enabled).state) return;
+          int cur_minutes = now.hour * 60 + now.minute;
+
+          int on_h12 = (int) id(plug1_on_hour).state;
+          int on_m   = (int) id(plug1_on_minute).state;
+          auto on_ampm = id(plug1_on_ampm).state;
+          bool on_pm = (on_ampm == "PM");
+          int on_h24 = (on_h12 % 12) + (on_pm ? 12 : 0);
+          int on_minutes = on_h24 * 60 + on_m;
+
+          int off_h12 = (int) id(plug1_off_hour).state;
+          int off_m   = (int) id(plug1_off_minute).state;
+          auto off_ampm = id(plug1_off_ampm).state;
+          bool off_pm = (off_ampm == "PM");
+          int off_h24 = (off_h12 % 12) + (off_pm ? 12 : 0);
+          int off_minutes = off_h24 * 60 + off_m;
+
+          bool should_on = (cur_minutes >= on_minutes) && (cur_minutes < off_minutes);
+          static bool last_on1 = false;
+          if (should_on != last_on1) {
+            last_on1 = should_on;
+            if (should_on) id(plug1_turn_on).execute();
+            else           id(plug1_turn_off).execute();
+          }
+
+  # Plug 2 schedule
+  - interval: 1min
+    then:
+      - lambda: |-
+          auto now = id(sntp_time).now();
+          if (!now.is_valid()) return;
+          if (!id(plug2_schedule_enabled).state) return;
+          int cur_minutes = now.hour * 60 + now.minute;
+
+          int on_h12 = (int) id(plug2_on_hour).state;
+          int on_m   = (int) id(plug2_on_minute).state;
+          auto on_ampm = id(plug2_on_ampm).state;
+          bool on_pm = (on_ampm == "PM");
+          int on_h24 = (on_h12 % 12) + (on_pm ? 12 : 0);
+          int on_minutes = on_h24 * 60 + on_m;
+
+          int off_h12 = (int) id(plug2_off_hour).state;
+          int off_m   = (int) id(plug2_off_minute).state;
+          auto off_ampm = id(plug2_off_ampm).state;
+          bool off_pm = (off_ampm == "PM");
+          int off_h24 = (off_h12 % 12) + (off_pm ? 12 : 0);
+          int off_minutes = off_h24 * 60 + off_m;
+
+          bool should_on = (cur_minutes >= on_minutes) && (cur_minutes < off_minutes);
+          static bool last_on2 = false;
+          if (should_on != last_on2) {
+            last_on2 = should_on;
+            if (should_on) id(plug2_turn_on).execute();
+            else           id(plug2_turn_off).execute();
+          }
+
+  # Plug 3–8 schedules
+  - interval: 1min
+    then:
+      - lambda: |-
+          auto now = id(sntp_time).now();
+          if (!now.is_valid()) return;
+
+          // plug 3
+          if (id(plug3_schedule_enabled).state) {
+            int cur = now.hour * 60 + now.minute;
+            int on_h12 = (int) id(plug3_on_hour).state;
+            int on_m   = (int) id(plug3_on_minute).state;
+            auto on_ampm = id(plug3_on_ampm).state;
+            bool on_pm = (on_ampm == "PM");
+            int on_h24 = (on_h12 % 12) + (on_pm ? 12 : 0);
+            int on_min = on_h24 * 60 + on_m;
+
+            int off_h12 = (int) id(plug3_off_hour).state;
+            int off_m   = (int) id(plug3_off_minute).state;
+            auto off_ampm = id(plug3_off_ampm).state;
+            bool off_pm = (off_ampm == "PM");
+            int off_h24 = (off_h12 % 12) + (off_pm ? 12 : 0);
+            int off_min = off_h24 * 60 + off_m;
+
+            bool should = (cur >= on_min) && (cur < off_min);
+            static bool last3 = false;
+            if (should != last3) {
+              last3 = should;
+              if (should) id(plug3_turn_on).execute();
+              else        id(plug3_turn_off).execute();
+            }
+          }
+
+  - interval: 1min
+    then:
+      - lambda: |-
+          auto now = id(sntp_time).now();
+          if (!now.is_valid()) return;
+
+          // ---------- PLUG 4 SCHEDULER ----------
+          // CHANGE IDs BELOW IF YOU MAKE NEW PLUGS (plug5, plug6, etc.)
+          if (id(plug4_schedule_enabled).state) {              // <--- schedule enable toggle
+            int cur = now.hour * 60 + now.minute;              // current time in minutes
+
+            // ---------- ON time ----------
+            int on_h12 = (int) id(plug4_on_hour).state;        // <--- selected ON hour
+            int on_m   = (int) id(plug4_on_minute).state;      // <--- selected ON minute
+            auto on_ampm = id(plug4_on_ampm).state;            // <--- "AM"/"PM" selector
+            bool on_pm = (on_ampm == "PM");
+            int on_h24 = (on_h12 % 12) + (on_pm ? 12 : 0);     // convert to 24-hour time
+            int on_min = on_h24 * 60 + on_m;                   // total ON time in minutes
+
+            // ---------- OFF time ----------
+            int off_h12 = (int) id(plug4_off_hour).state;      // <--- selected OFF hour
+            int off_m   = (int) id(plug4_off_minute).state;    // <--- selected OFF minute
+            auto off_ampm = id(plug4_off_ampm).state;          // <--- "AM"/"PM" selector
+            bool off_pm = (off_ampm == "PM");
+            int off_h24 = (off_h12 % 12) + (off_pm ? 12 : 0);  // convert to 24-hour time
+            int off_min = off_h24 * 60 + off_m;                // total OFF time in minutes
+
+            // ---------- Compare and act ----------
+            bool should = (cur >= on_min) && (cur < off_min);  // true = should be ON
+            static bool last4 = false;                         // <--- remember last state
+            if (should != last4) {
+              last4 = should;
+              if (should) {
+                id(plug4_turn_on).execute();                   // <--- call ON script
+              } else {
+                id(plug4_turn_off).execute();                  // <--- call OFF script
+              }
+            }
+          }
+
+          // plug 5
+          if (id(plug5_schedule_enabled).state) {
+            int cur = now.hour * 60 + now.minute;
+            int on_h12 = (int) id(plug5_on_hour).state;
+            int on_m   = (int) id(plug5_on_minute).state;
+            auto on_ampm = id(plug5_on_ampm).state;
+            bool on_pm = (on_ampm == "PM");
+            int on_h24 = (on_h12 % 12) + (on_pm ? 12 : 0);
+            int on_min = on_h24 * 60 + on_m;
+
+            int off_h12 = (int) id(plug5_off_hour).state;
+            int off_m   = (int) id(plug5_off_minute).state;
+            auto off_ampm = id(plug5_off_ampm).state;
+            bool off_pm = (off_ampm == "PM");
+            int off_h24 = (off_h12 % 12) + (off_pm ? 12 : 0);
+            int off_min = off_h24 * 60 + off_m;
+
+            bool should = (cur >= on_min) && (cur < off_min);
+            static bool last5 = false;
+            if (should != last5) {
+              last5 = should;
+              if (should) id(plug5_turn_on).execute();
+              else        id(plug5_turn_off).execute();
+            }
+          }
+
+          // plug 6
+          if (id(plug6_schedule_enabled).state) {
+            int cur = now.hour * 60 + now.minute;
+            int on_h12 = (int) id(plug6_on_hour).state;
+            int on_m   = (int) id(plug6_on_minute).state;
+            auto on_ampm = id(plug6_on_ampm).state;
+            bool on_pm = (on_ampm == "PM");
+            int on_h24 = (on_h12 % 12) + (on_pm ? 12 : 0);
+            int on_min = on_h24 * 60 + on_m;
+
+            int off_h12 = (int) id(plug6_off_hour).state;
+            int off_m   = (int) id(plug6_off_minute).state;
+            auto off_ampm = id(plug6_off_ampm).state;
+            bool off_pm = (off_ampm == "PM");
+            int off_h24 = (off_h12 % 12) + (off_pm ? 12 : 0);
+            int off_min = off_h24 * 60 + off_m;
+
+            bool should = (cur >= on_min) && (cur < off_min);
+            static bool last6 = false;
+            if (should != last6) {
+              last6 = should;
+              if (should) id(plug6_turn_on).execute();
+              else        id(plug6_turn_off).execute();
+            }
+          }
+
+          // plug 7
+          if (id(plug7_schedule_enabled).state) {
+            int cur = now.hour * 60 + now.minute;
+            int on_h12 = (int) id(plug7_on_hour).state;
+            int on_m   = (int) id(plug7_on_minute).state;
+            auto on_ampm = id(plug7_on_ampm).state;
+            bool on_pm = (on_ampm == "PM");
+            int on_h24 = (on_h12 % 12) + (on_pm ? 12 : 0);
+            int on_min = on_h24 * 60 + on_m;
+
+            int off_h12 = (int) id(plug7_off_hour).state;
+            int off_m   = (int) id(plug7_off_minute).state;
+            auto off_ampm = id(plug7_off_ampm).state;
+            bool off_pm = (off_ampm == "PM");
+            int off_h24 = (off_h12 % 12) + (off_pm ? 12 : 0);
+            int off_min = off_h24 * 60 + off_m;
+
+            bool should = (cur >= on_min) && (cur < off_min);
+            static bool last7 = false;
+            if (should != last7) {
+              last7 = should;
+              if (should) id(plug7_turn_on).execute();
+              else        id(plug7_turn_off).execute();
+            }
+          }
+
+          // plug 8
+          if (id(plug8_schedule_enabled).state) {
+            int cur = now.hour * 60 + now.minute;
+            int on_h12 = (int) id(plug8_on_hour).state;
+            int on_m   = (int) id(plug8_on_minute).state;
+            auto on_ampm = id(plug8_on_ampm).state;
+            bool on_pm = (on_ampm == "PM");
+            int on_h24 = (on_h12 % 12) + (on_pm ? 12 : 0);
+            int on_min = on_h24 * 60 + on_m;
+
+            int off_h12 = (int) id(plug8_off_hour).state;
+            int off_m   = (int) id(plug8_off_minute).state;
+            auto off_ampm = id(plug8_off_ampm).state;
+            bool off_pm = (off_ampm == "PM");
+            int off_h24 = (off_h12 % 12) + (off_pm ? 12 : 0);
+            int off_min = off_h24 * 60 + off_m;
+
+            bool should = (cur >= on_min) && (cur < off_min);
+            static bool last8 = false;
+            if (should != last8) {
+              last8 = should;
+              if (should) id(plug8_turn_on).execute();
+              else        id(plug8_turn_off).execute();
+            }
+          }
