@@ -18,6 +18,7 @@
 #include "esp_mn_models.h"
 #include "esp_process_sdkconfig.h"
 #include "driver/ledc.h"
+#include "driver/gpio.h"
 
 #define TAG "WAKE_DBG"
 #define s3
@@ -26,6 +27,7 @@
 #define I2S_WS_IO (gpio_num_t)5
 #define I2S_SD_IO (gpio_num_t)6
 #endif
+#define TRIGGER_GPIO (gpio_num_t)7
 int wakeup_flag = 0;
 static i2s_chan_handle_t rx_handle;
 static esp_afe_sr_iface_t *afe_handle = NULL;
@@ -199,16 +201,21 @@ void detect_Task(void *arg)
             ESP_LOGI(TAG, "Model index: %d, Word index: %d", res->wakenet_model_index, res->wake_word_index);
             // afe_handle->disable_wakenet(afe_data);  // DISABLE WAKE NET
             wakeup_flag = 1;
+            // Trigger GPIO high to signal Raspberry Pi
+            gpio_set_level(TRIGGER_GPIO, 1);
+            ESP_LOGI(TAG, "GPIO %d set HIGH to trigger Raspberry Pi", TRIGGER_GPIO);
         }
 
         if (res->raw_data_channels == 1 && res->wakeup_state == WAKENET_DETECTED)
         {
             wakeup_flag = 1;
+            gpio_set_level(TRIGGER_GPIO, 1);
         }
         else if (res->raw_data_channels > 1 && res->wakeup_state == WAKENET_CHANNEL_VERIFIED)
         {
             printf("AFE_FETCH_CHANNEL_VERIFIED, channel index: %d\n", res->trigger_channel_id);
             wakeup_flag = 1;
+            gpio_set_level(TRIGGER_GPIO, 1);
         }
 
         if (wakeup_flag == 1)
@@ -252,6 +259,10 @@ void detect_Task(void *arg)
                     ledc_set_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)i, 0); // OFF
                     ledc_update_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)i);
                 }
+
+                // Reset GPIO to low after timeout
+                gpio_set_level(TRIGGER_GPIO, 0);
+                ESP_LOGI(TAG, "GPIO %d set LOW after timeout", TRIGGER_GPIO);
 
                 printf("\n-----------awaits to be waken up-----------\n");
                 continue;
@@ -366,8 +377,19 @@ extern "C" void app_main()
             .flags = {.output_invert = 0}};
         ledc_channel_config(&ledc_ch);
     }
+
+    // Configure TRIGGER_GPIO as output
+    gpio_config_t io_conf = {
+        .pin_bit_mask = (1ULL << TRIGGER_GPIO),
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE};
+    gpio_config(&io_conf);
+    gpio_set_level(TRIGGER_GPIO, 0); // Start low
+
     task_flag = 1;
-    printf("LED initialized done ");
+    printf("LED and GPIO initialized done ");
     xTaskCreatePinnedToCore(feed_Task, "feed", 4096, (void *)afe_data, 7, NULL, 0);
     xTaskCreatePinnedToCore(detect_Task, "detect", 8192, (void *)afe_data, 6, NULL, 1);
 }

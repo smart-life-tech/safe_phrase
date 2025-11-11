@@ -3,6 +3,13 @@ import sys
 import time
 import string
 import threading
+import subprocess
+
+try:
+    import RPi.GPIO as GPIO
+except ImportError:
+    print("RPi.GPIO not available. This script requires Raspberry Pi.")
+    sys.exit(1)
 
 import speech_recognition as sr
 from difflib import SequenceMatcher
@@ -17,6 +24,11 @@ except Exception:
     VOSK_AVAILABLE = False
 
 # ---------------- CONFIG ----------------
+# GPIO pins (BCM numbering)
+LED_PIN = 17
+VIBRATION_PIN = 18
+TRIGGER_PIN = 27  # Input from ESP32 GPIO 7
+
 # Customize phrases (10 default fraudulent phrases — change as needed)
 PHRASES = [
     "3-digit code",
@@ -416,6 +428,9 @@ def best_match(recognized: str, phrases, threshold=MATCH_THRESHOLD):
 def handle_detection(phrase):
     """
     Print FIRST/SECOND detection messages and update counters thread-safely.
+    On first detection: turn on LED.
+    On second detection: vibrate.
+    After second, reset cycle.
     """
     with detection_lock:
         detection_counts[phrase] += 1
@@ -423,8 +438,19 @@ def handle_detection(phrase):
 
     if count == 1:
         print(f"\n FIRST DETECTED: \"{phrase}\"")
+        GPIO.output(LED_PIN, GPIO.HIGH)  # Turn on LED
+        print("LED turned ON")
     elif count == 2:
         print(f"\n SECOND DETECTED: \"{phrase}\"")
+        GPIO.output(VIBRATION_PIN, GPIO.HIGH)  # Vibrate
+        print("Vibration activated")
+        time.sleep(1)  # Vibrate for 1 second
+        GPIO.output(VIBRATION_PIN, GPIO.LOW)
+        print("Vibration stopped")
+        # Reset cycle after second detection
+        detection_counts[phrase] = 0
+        GPIO.output(LED_PIN, GPIO.LOW)  # Turn off LED
+        print("Cycle reset, LED turned OFF")
     else:
         print(f"\nDetected \"{phrase}\" ({count} times)")
 
@@ -556,6 +582,18 @@ def run_vosk_backend():
 
 # ---------------- Coordinator / Main ----------------
 def main():
+    # GPIO setup
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(LED_PIN, GPIO.OUT)
+    GPIO.setup(VIBRATION_PIN, GPIO.OUT)
+    GPIO.setup(TRIGGER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    # Wait for GPIO trigger to activate silence monitoring
+    if GPIO:
+        print("Waiting for GPIO trigger to activate silence monitoring...")
+        while GPIO.input(TRIGGER_PIN) == GPIO.LOW:
+            time.sleep(0.1)
+        print("GPIO trigger received. Starting silence monitoring...")
+
     print("Fraudulent Phrase Detector")
     print("=========================")
     print(f"Mode: {MODE}")

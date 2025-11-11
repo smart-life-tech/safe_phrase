@@ -25,6 +25,15 @@ except Exception as e:
     print("Missing dependency. Please 'pip install pyaudio numpy'")
     raise
 
+try:
+    import RPi.GPIO as GPIO
+except ImportError:
+    print("RPi.GPIO not available. This script requires Raspberry Pi.")
+    GPIO = None
+
+# GPIO pin for shutdown trigger (from ESP32 GPIO 7)
+TRIGGER_PIN = 27
+
 SAMPLE_RATE = 16000
 FRAME_DURATION_MS = 30
 CHANNELS = 1
@@ -84,7 +93,12 @@ def calibrate_ambient(stream, duration_s=CALIBRATION_SECONDS):
     return silence_threshold
 
 def main():
-    parser = argparse.ArgumentParser(description="Shutdown on prolonged silence")
+    # GPIO setup for activation trigger
+    if GPIO:
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(TRIGGER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+    parser = argparse.ArgumentParser(description="Shutdown on prolonged silence after GPIO trigger")
     parser.add_argument("--device", type=int, default=None, help="ALSA device index")
     parser.add_argument("--list-devices", action="store_true", help="List input devices and exit")
     parser.add_argument("--min-silence", type=float, default=MIN_SILENCE_SECONDS, help="Seconds of continuous silence before shutdown")
@@ -112,6 +126,13 @@ def main():
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, handle_sigterm)
+
+    # Wait for GPIO trigger to activate silence monitoring
+    if GPIO:
+        print("Waiting for GPIO trigger to activate silence monitoring...")
+        while GPIO.input(TRIGGER_PIN) == GPIO.LOW:
+            time.sleep(0.1)
+        print("GPIO trigger received. Starting silence monitoring...")
 
     start_time = time.time()
     last_non_silent = time.time()
